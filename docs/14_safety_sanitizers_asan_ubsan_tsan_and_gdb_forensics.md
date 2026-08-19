@@ -1,13 +1,14 @@
 # Module 14: C Safety Sanitizers (ASan, UBSan, TSan) & GDB Core Dump Forensics
 
-**Track:** C Systems Programming, Memory Engineering & High-Performance Computing  
-**Category:** Dynamic Memory Sanitizers, Shadow Memory Architecture, Core Dumps & GDB Forensics  
-**Standard Identifier:** `DOC-STD-UNIVERSAL-2026`  
+**Track:** C Systems Programming, Memory Engineering & High-Performance Computing
+**Category:** Dynamic Memory Sanitizers, Shadow Memory Architecture, Core Dumps & GDB Forensics
+**Standard Identifier:** `DOC-STD-UNIVERSAL-2026`
 **Status:** ✅ Completed
 
 ---
 
 ## 📑 Table of Contents
+
 1. [High-Level Overview & Executive Summary](#1-high-level-overview--executive-summary)
 2. [AddressSanitizer (ASan) Architecture & Shadow Memory Mechanics](#2-addresssanitizer-asan-architecture--shadow-memory-mechanics)
 3. [UndefinedBehaviorSanitizer (UBSan) & Undefined Behavior Traps](#3-undefinedbehaviorsanitizer-ubsan--undefined-behavior-traps)
@@ -17,14 +18,12 @@
 7. [Certification & Engineering Essentials (MISRA-C / CERT-C Cheat Sheet)](#7-certification--engineering-essentials-misra-c--cert-c-cheat-sheet)
 8. [Comparative Analysis Matrix: Dynamic Analysis & Sanitizer Tools](#8-comparative-analysis-matrix-dynamic-analysis--sanitizer-tools)
 9. [Performance & Hardware Resource Optimization](#9-performance--hardware-resource-optimization)
-10. [In-Depth Engineering Perspectives](#10-in-depth-engineering-perspectives)
-11. [Well-Architected Systems Programming Principles](#11-well-architected-systems-programming-principles)
-12. [Step-by-Step Production Lab: Automated Sanitizer Suite & GDB Crash Triage](#12-step-by-step-production-lab-automated-sanitizer-suite--gdb-crash-triage)
-13. [Pure CLI / Command Interface](#13-pure-cli--command-interface)
-14. [Advanced Architecture & Edge-Case Failure Modes](#14-advanced-architecture--edge-case-failure-modes)
-15. [Detailed Sub-Components & Subsystems](#15-detailed-sub-components--subsystems)
-16. [References (The 5+5 Rule)](#16-references-the-55-rule)
-17. [Universal FinOps & Hardware Cost Governance](#17-universal-finops--hardware-cost-governance)
+10. [Step-by-Step Production Lab: Automated Sanitizer Suite & GDB Crash Triage](#10-step-by-step-production-lab-automated-sanitizer-suite--gdb-crash-triage)
+11. [Pure CLI / Command Interface](#11-pure-cli--command-interface)
+12. [Advanced Architecture & Edge-Case Failure Modes](#12-advanced-architecture--edge-case-failure-modes)
+13. [Detailed Sub-Components & Subsystems](#13-detailed-sub-components--subsystems)
+14. [References (The 5+5 Rule)](#14-references-the-55-rule)
+15. [Universal FinOps & Hardware Cost Governance](#15-universal-finops--hardware-cost-governance)
 
 ---
 
@@ -33,12 +32,13 @@
 Developing zero-defect, mission-critical systems in C requires deploying automated **Dynamic Analysis Sanitizers** inside every Continuous Integration (CI) test pipeline and mastering **Post-Mortem Linux Core Dump Forensics**.
 
 Rather than relying on non-deterministic black-box testing, modern compiler suites (Clang/LLVM and GCC) inject runtime instrumentation directly into compiled binaries:
+
 1. **AddressSanitizer (ASan)**: Intercepts all memory loads/stores using a **Shadow Memory Byte Map** to catch Heap/Stack Buffer Overflows, Use-After-Free (UAF), and Double-Free errors at the exact instruction of occurrence.
 2. **UndefinedBehaviorSanitizer (UBSan)**: Traps signed integer overflows, misaligned pointer dereferences, null pointer access, and out-of-bounds bit shifts.
 3. **ThreadSanitizer (TSan)**: Monitors multi-threaded memory access patterns via vector clocks to catch unsynchronized data races.
 4. **GDB Core Dump Forensics**: Extracts backtraces, register contents (`%rip`, `%rsp`, `%rax`), and local stack variable states from Linux kernel crash dumps.
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │               ADDRESSSANITIZER (ASan) SHADOW MEMORY ARCHITECTURE               │
 ├────────────────────────────────────────────────────────────────────────────────┤
@@ -63,6 +63,7 @@ Rather than relying on non-deterministic black-box testing, modern compiler suit
 ```
 
 ### 👔 Executive Summary (For Managers & Non-Technical Stakeholders)
+
 * **Business Purpose**: Guarantees software resilience and cybersecurity compliance by catching 100% of memory corruption vulnerabilities and software bugs before software ever reaches production.
 * **How It Works**: Uses advanced compiler security scanners to instrument test builds, instantly failing automated CI pipelines if a developer introduces a memory leak, race condition, or buffer overflow.
 * **Key Business Value & ROI**: Prevents multi-million-dollar cybersecurity data breach liabilities, slashes production crash incidents to zero, and cuts developer debugging triage time by 80%.
@@ -75,7 +76,7 @@ AddressSanitizer maps every 8 bytes of application memory to **1 byte of Shadow 
 
 $$\text{Shadow Address} = \left(\frac{\text{App Address}}{8}\right) + \text{Offset}$$
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                     ASAN SHADOW POISON VALUES & MEANINGS                       │
 ├───────────────────┬────────────────────────────────────────────────────────────┤
@@ -101,6 +102,7 @@ $$\text{Shadow Address} = \left(\frac{\text{App Address}}{8}\right) + \text{Offs
 ## 3. UndefinedBehaviorSanitizer (UBSan) & Undefined Behavior Traps
 
 UndefinedBehaviorSanitizer instruments source code to abort execution upon detecting ISO C Undefined Behavior:
+
 * **Signed Integer Overflow**: `int32_t c = a + b;` where $a+b > \text{INT32\_MAX}$.
 * **Null Pointer Dereference**: Accessing `*ptr` when `ptr == NULL`.
 * **Misaligned Pointer Access**: Accessing `uint32_t *` at an odd memory address.
@@ -118,12 +120,13 @@ ThreadSanitizer instruments every memory read, memory write, and synchronization
 
 When a Linux process crashes from a fatal signal (`SIGSEGV`, `SIGBUS`, `SIGABRT`), the OS kernel writes a snapshot of the process address space to disk as a **Core Dump**.
 
-### Linux Kernel Core Dump Setup:
+### Linux Kernel Core Dump Setup
+
 ```bash
 # Enable unlimited core dump size
 ulimit -c unlimited
 
-# Configure kernel core dump pattern to /tmp/core.<program>.<pid>
+# Configure kernel core dump pattern to /tmp/core.`<program>`.<pid>
 sudo sysctl -w kernel.core_pattern="/tmp/core.%e.%p"
 ```
 
@@ -131,7 +134,7 @@ sudo sysctl -w kernel.core_pattern="/tmp/core.%e.%p"
 
 ## 6. GDB (GNU Debugger) Post-Mortem Crash Forensics
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │               GDB POST-MORTEM FORENSIC TRIAGE COMMAND CHEAT SHEET              │
 ├───────────────────┬────────────────────────────────────────────────────────────┤
@@ -165,16 +168,16 @@ sudo sysctl -w kernel.core_pattern="/tmp/core.%e.%p"
 
 | Tool | CPU Overhead | Memory Overhead | Detection Domain | False Positives |
 | :--- | :--- | :--- | :--- | :--- |
-| **AddressSanitizer (ASan)** | **$2\times$ (Fast!)** | **$2\times$** | **Buffer Overflow, UAF, Leaks**| **0% (Deterministic)** |
-| **UBSan** | **$1.2\times$ (Minimal)**| **0%** | **Undefined Behavior, Overflow**| **0%** |
+| **AddressSanitizer (ASan)** | **$2\times$ (Fast!)** | **$2\times$** | **Buffer Overflow, UAF, Leaks** | **0% (Deterministic)** |
+| **UBSan** | **$1.2\times$ (Minimal)** | **0%** | **Undefined Behavior, Overflow** | **0%** |
 | **ThreadSanitizer (TSan)** | $5\times$ | $5\times$ | **Multi-Thread Data Races** | **0%** |
-| **Valgrind (Memcheck)** | $20\times$ (Very Slow)| $3\times$ | Uninstrumented binaries | Very Low |
+| **Valgrind (Memcheck)** | $20\times$ (Very Slow) | $3\times$ | Uninstrumented binaries | Very Low |
 
 ---
 
 ## 9. Performance & Hardware Resource Optimization
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                         SANITIZER TUNING PLAYBOOK                              │
 ├────────────────────────────────────────────────────────────────────────────────┤
@@ -190,9 +193,10 @@ sudo sysctl -w kernel.core_pattern="/tmp/core.%e.%p"
 
 ## 10. Step-by-Step Production Lab: Automated Sanitizer Suite & GDB Crash Triage
 
-### File Structure:
-- [`src/forensic_demo.c`](file:///Users/frgonzal/Documents/maxine/c_lang/src/forensic_demo.c)
-- [`scripts/gdb_triage.sh`](file:///Users/frgonzal/Documents/maxine/c_lang/scripts/gdb_triage.sh)
+### File Structure
+
+* [`src/forensic_demo.c`](file:///Users/frgonzal/Documents/maxine/c_lang/src/forensic_demo.c)
+* [`scripts/gdb_triage.sh`](file:///Users/frgonzal/Documents/maxine/c_lang/scripts/gdb_triage.sh)
 
 ### Step 1: Author Memory Fault Trigger Application
 
@@ -268,7 +272,9 @@ gdb --batch \
 ## 11. Pure CLI / Command Interface
 
 ### 1. Compile with AddressSanitizer & LeakSanitizer
+
 Compile with full runtime instrumentation:
+
 ```bash
 gcc -std=c17 -Wall -Wextra -Werror -Wpedantic \
     -g -O1 -DTRIGGER_BUG \
@@ -278,13 +284,17 @@ gcc -std=c17 -Wall -Wextra -Werror -Wpedantic \
 ```
 
 ### 2. Run Binary and Verify AddressSanitizer Heap-Use-After-Free Trap
+
 Execute instrumented binary:
+
 ```bash
 ./bin/forensic_demo 2>&1 | head -n 30 || true
 ```
 
 ### 3. Compile Production Hardened Binary with Debug Symbols
+
 Build optimized binary with debug symbols for production core dump analysis:
+
 ```bash
 gcc -std=c17 -Wall -Wextra -O2 -g \
     -fno-omit-frame-pointer -fstack-protector-strong \
@@ -296,7 +306,7 @@ gcc -std=c17 -Wall -Wextra -O2 -g \
 
 ## 12. Advanced Architecture & Edge-Case Failure Modes
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                    SANITIZER FAILURE RECOVERY MATRIX                           │
 ├──────────────────────┬────────────────────────┬────────────────────────────────┤
@@ -321,29 +331,37 @@ gcc -std=c17 -Wall -Wextra -O2 -g \
 ## 13. Detailed Sub-Components & Subsystems
 
 ### 1. ASan Redzone Allocator Interceptor
+
 * **Key Concepts**: Wraps `malloc()` calls to allocate extra 32-byte redzone buffers before and after every allocated block, poisoning them with `0xFA`.
 * **CLI / Tool Snippet**:
+
 ```bash
 ASAN_OPTIONS="help=1" ./bin/forensic_demo 2>&1 | head -n 20 || true
 ```
 
 ### 2. Linux Kernel `/proc/sys/kernel/core_pattern` Pipe Subsystem
+
 * **Key Concepts**: Directs kernel core dumps directly into system diagnostic daemons (`systemd-coredump`) for automatic S3 artifact uploads.
 * **CLI / Tool Snippet**:
+
 ```bash
 cat /proc/sys/kernel/core_pattern 2>/dev/null || true
 ```
 
 ### 3. GDB Batch Mode Automation Engine (`gdb --batch`)
+
 * **Key Concepts**: Non-interactive command runner allowing CI/CD scripts to extract backtraces and registers without opening an interactive terminal.
 * **CLI / Tool Snippet**:
+
 ```bash
 gdb --version | head -n 1
 ```
 
 ### 4. DWARF Debug Information Parser (`libdw` / `dwarfdump`)
+
 * **Key Concepts**: Parses `.debug_info` and `.debug_line` ELF sections to map machine instruction addresses back to exact C source file line numbers.
 * **CLI / Tool Snippet**:
+
 ```bash
 objdump --dwarf=info bin/forensic_prod 2>/dev/null | head -n 30 || true
 ```
@@ -353,6 +371,7 @@ objdump --dwarf=info bin/forensic_prod 2>/dev/null | head -n 30 || true
 ## 14. References (The 5+5 Rule)
 
 ### Official Documentation & Academic Specifications
+
 1. [LLVM Clang AddressSanitizer (ASan) Architecture Manual](https://clang.llvm.org/docs/AddressSanitizer.html)
 2. [LLVM UndefinedBehaviorSanitizer (UBSan) Specification](https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html)
 3. [LLVM ThreadSanitizer (TSan) Data Race Manual](https://clang.llvm.org/docs/ThreadSanitizer.html)
@@ -360,17 +379,18 @@ objdump --dwarf=info bin/forensic_prod 2>/dev/null | head -n 30 || true
 5. [SEI CERT C Coding Standard: Dynamic Analysis Rules](https://wiki.sei.cmu.edu/)
 
 ### Authoritative Engineering Textbooks & Systems Deep Dives
-6. [Konstantin Serebryany et al.: AddressSanitizer: A Fast Address Sanity Checker (USENIX ATC)](https://www.usenix.org/conference/atc12/technical-sessions/presentation/serebryany)
-7. [Julia Evans: GDB Quick Reference and Linux Core Dump Debugging](https://jvns.ca/)
-8. [Eli Bendersky: How AddressSanitizer Works: Shadow Memory Deep Dive](https://eli.thegreenplace.net/)
-9. [Brendan Gregg: BPF Performance Tools: Profiling and Core Dumps](https://www.brendangregg.com/)
-10. [Google Security Engineering: Eliminating Memory Safety Vulnerabilities with Dynamic Sanitizers](https://security.googleblog.com/)
+
+1. [Konstantin Serebryany et al.: AddressSanitizer: A Fast Address Sanity Checker (USENIX ATC)](https://www.usenix.org/conference/atc12/technical-sessions/presentation/serebryany)
+2. [Julia Evans: GDB Quick Reference and Linux Core Dump Debugging](https://jvns.ca/)
+3. [Eli Bendersky: How AddressSanitizer Works: Shadow Memory Deep Dive](https://eli.thegreenplace.net/)
+4. [Brendan Gregg: BPF Performance Tools: Profiling and Core Dumps](https://www.brendangregg.com/)
+5. [Google Security Engineering: Eliminating Memory Safety Vulnerabilities with Dynamic Sanitizers](https://security.googleblog.com/)
 
 ---
 
 ## 15. Universal FinOps & Hardware Cost Governance
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                        SAFETY FINOPS SAVINGS MATRIX                            │
 ├──────────────────────────┬──────────────────────────┬──────────────────────────┤
@@ -391,12 +411,15 @@ objdump --dwarf=info bin/forensic_prod 2>/dev/null | head -n 30 || true
 ```
 
 ### 1. Automated Sanitizer CI Testing vs Production Outage Economics
+
 In an enterprise cloud software platform handling customer financial transactions:
-- Undetected Use-After-Free and Heap Overflow vulnerabilities escaping into production trigger intermittent server crashes, corrupted account balances, and critical emergency security hotfixes ($~\$150,000\text{ engineering emergency labor} + \$500,000\text{ SLA credit penalties}$).
-- Enforcing `-fsanitize=address,undefined` in CI catches 100% of memory errors on local pull requests before code is ever merged.
-- **FinOps ROI**: Eliminates **\$650,000+ per incident in emergency remediation expenses**.
+
+* Undetected Use-After-Free and Heap Overflow vulnerabilities escaping into production trigger intermittent server crashes, corrupted account balances, and critical emergency security hotfixes ($~\$150,000\text{ engineering emergency labor} + \$500,000\text{ SLA credit penalties}$).
+* Enforcing `-fsanitize=address,undefined` in CI catches 100% of memory errors on local pull requests before code is ever merged.
+* **FinOps ROI**: Eliminates **\$650,000+ per incident in emergency remediation expenses**.
 
 ### 2. Automated GDB Core Dump Triage Labor Savings
-- Manually reproducing complex race conditions without core dumps takes an average of 16 engineering hours per incident.
-- Automated GDB core dump scripting extracts exact line numbers and variable values in 30 seconds.
-- **FinOps ROI**: Saves **15.5 engineering hours per production incident ($~\$1,800 saved per incident)**.
+
+* Manually reproducing complex race conditions without core dumps takes an average of 16 engineering hours per incident.
+* Automated GDB core dump scripting extracts exact line numbers and variable values in 30 seconds.
+* **FinOps ROI**: Saves **15.5 engineering hours per production incident ($~\$1,800 saved per incident)**.

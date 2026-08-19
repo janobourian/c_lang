@@ -1,13 +1,14 @@
-# Module 03: C Strings, <string.h>, Bounds Safety & Hardened Text Parsing
+# Module 03: C Strings, `<string.h>`, Bounds Safety & Hardened Text Parsing
 
-**Track:** C Systems Programming, Memory Engineering & High-Performance Computing  
-**Category:** Null-Terminated Byte Arrays, Memory Safety, Safe Parsing & Buffer Overflow Defense  
-**Standard Identifier:** `DOC-STD-UNIVERSAL-2026`  
+**Track:** C Systems Programming, Memory Engineering & High-Performance Computing
+**Category:** Null-Terminated Byte Arrays, Memory Safety, Safe Parsing & Buffer Overflow Defense
+**Standard Identifier:** `DOC-STD-UNIVERSAL-2026`
 **Status:** ✅ Completed
 
 ---
 
 ## 📑 Table of Contents
+
 1. [High-Level Overview & Executive Summary](#1-high-level-overview--executive-summary)
 2. [C String Architecture: Null-Termination, Stack vs .rodata Literals](#2-c-string-architecture-null-termination-stack-vs-rodata-literals)
 3. [Vulnerability Taxonomy: Buffer Overflows, Off-by-One & Format Strings](#3-vulnerability-taxonomy-buffer-overflows-off-by-one--format-strings)
@@ -16,14 +17,12 @@
 6. [Certification & Engineering Essentials (MISRA-C / CERT-C Cheat Sheet)](#6-certification--engineering-essentials-misra-c--cert-c-cheat-sheet)
 7. [Comparative Analysis Matrix: String Manipulation Functions](#7-comparative-analysis-matrix-string-manipulation-functions)
 8. [Performance & Hardware Resource Optimization](#8-performance--hardware-resource-optimization)
-9. [In-Depth Engineering Perspectives](#9-in-depth-engineering-perspectives)
-10. [Well-Architected Systems Programming Principles](#10-well-architected-systems-programming-principles)
-11. [Step-by-Step Production Lab: Hardened Zero-Copy HTTP/1.1 Header Parser](#11-step-by-step-production-lab-hardened-zero-copy-http11-header-parser)
-12. [Pure CLI / Command Interface](#12-pure-cli--command-interface)
-13. [Advanced Architecture & Edge-Case Failure Modes](#13-advanced-architecture--edge-case-failure-modes)
-14. [Detailed Sub-Components & Subsystems](#14-detailed-sub-components--subsystems)
-15. [References (The 5+5 Rule)](#15-references-the-55-rule)
-16. [Universal FinOps & Hardware Cost Governance](#16-universal-finops--hardware-cost-governance)
+9. [Step-by-Step Production Lab: Hardened Zero-Copy HTTP/1.1 Header Parser](#9-step-by-step-production-lab-hardened-zero-copy-http11-header-parser)
+10. [Pure CLI / Command Interface](#10-pure-cli--command-interface)
+11. [Advanced Architecture & Edge-Case Failure Modes](#11-advanced-architecture--edge-case-failure-modes)
+12. [Detailed Sub-Components & Subsystems](#12-detailed-sub-components--subsystems)
+13. [References (The 5+5 Rule)](#13-references-the-55-rule)
+14. [Universal FinOps & Hardware Cost Governance](#14-universal-finops--hardware-cost-governance)
 
 ---
 
@@ -35,7 +34,7 @@ Historically, string mismanagement has been the single greatest source of critic
 
 Mission-critical C systems programming requires replacing all dangerous, un-bounded legacy functions (`gets`, `strcpy`, `strcat`, `sprintf`, `atoi`) with secure, bounds-checked modern standards (`snprintf`, `strlcpy`, `strtok_r`, `strtol`), and compiling with **Compiler Fortification (`-D_FORTIFY_SOURCE=3`)** and **AddressSanitizer (`-fsanitize=address`)**.
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │               C NULL-TERMINATED STRING MEMORY REPRESENTATION                   │
 ├────────────────────────────────────────────────────────────────────────────────┤
@@ -50,6 +49,7 @@ Mission-critical C systems programming requires replacing all dangerous, un-boun
 ```
 
 ### 👔 Executive Summary (For Managers & Non-Technical Stakeholders)
+
 * **Business Purpose**: Protects enterprise infrastructure from cybersecurity hackers, remote code execution breaches, and server crashes caused by malformed or oversized network inputs.
 * **How It Works**: Enforces strict mathematical length boundaries on all incoming text data (usernames, HTTP URLs, database queries). If incoming data exceeds memory capacity, the software truncates or rejects the payload gracefully without crashing.
 * **Key Business Value & ROI**: Eliminates over 70% of zero-day remote exploit vulnerabilities, satisfies strict cybersecurity audits (SOC 2, ISO 27001, PCI-DSS), and protects corporate reputation from data leaks.
@@ -58,7 +58,7 @@ Mission-critical C systems programming requires replacing all dangerous, un-boun
 
 ## 2. C String Architecture: Null-Termination, Stack vs .rodata Literals
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                   STRING LITERALS (.rodata) VS STACK ARRAYS                    │
 ├──────────────────────────┬──────────────────────────┬──────────────────────────┤
@@ -79,7 +79,7 @@ Mission-critical C systems programming requires replacing all dangerous, un-boun
 
 ## 3. Vulnerability Taxonomy: Buffer Overflows, Off-by-One & Format Strings
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │               MASTER STRING VULNERABILITY TAXONOMY & ATTACK VECTORS            │
 ├──────────────────────┬──────────┬──────────────────────────────────────────────┤
@@ -103,7 +103,7 @@ Mission-critical C systems programming requires replacing all dangerous, un-boun
 
 ## 4. Legacy Deprecated APIs vs Hardened Secure Alternatives
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │               FORBIDDEN LEGACY APIS VS HARDENED SECURE STANDARDS               │
 ├───────────────────┬───────────────────┬────────────────────────────────────────┤
@@ -131,6 +131,7 @@ Mission-critical C systems programming requires replacing all dangerous, un-boun
 ## 5. Robust Parsing: strtok_r, strtol, strspn & Pointer Scanning
 
 ### 5.1 Safe Number Parsing with `strtol`
+
 Never use `atoi()` or `sscanf("%d")` for untrusted input. Use `strtol()` with complete error checking:
 
 ```c
@@ -173,14 +174,14 @@ bool parse_uint32_safe(const char *str, uint32_t *out_val) {
 | :--- | :--- | :--- | :--- | :--- |
 | **`strcpy`** | **No (Fatal)** | Yes | No | Yes |
 | **`strncpy`** | Partial | **No (Dangerous!)** | No | Yes |
-| **`snprintf`** | **Yes** | **Yes (Guaranteed)** | **Yes (Return $\ge N$)**| **Yes** |
-| **`strlcpy` (BSD)**| **Yes** | **Yes (Guaranteed)** | **Yes (Return $\ge N$)**| **Yes** |
+| **`snprintf`** | **Yes** | **Yes (Guaranteed)** | **Yes (Return $\ge N$)** | **Yes** |
+| **`strlcpy` (BSD)** | **Yes** | **Yes (Guaranteed)** | **Yes (Return $\ge N$)** | **Yes** |
 
 ---
 
 ## 8. Performance & Hardware Resource Optimization
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                         STRING TUNING PLAYBOOK                                 │
 ├────────────────────────────────────────────────────────────────────────────────┤
@@ -196,9 +197,10 @@ bool parse_uint32_safe(const char *str, uint32_t *out_val) {
 
 ## 9. Step-by-Step Production Lab: Hardened Zero-Copy HTTP/1.1 Header Parser
 
-### File Structure:
-- [`src/http_header_parser.c`](file:///Users/frgonzal/Documents/maxine/c_lang/src/http_header_parser.c)
-- [`include/http_header_parser.h`](file:///Users/frgonzal/Documents/maxine/c_lang/include/http_header_parser.h)
+### File Structure
+
+* [`src/http_header_parser.c`](file:///Users/frgonzal/Documents/maxine/c_lang/src/http_header_parser.c)
+* [`include/http_header_parser.h`](file:///Users/frgonzal/Documents/maxine/c_lang/include/http_header_parser.h)
 
 ### Step 1: Author Header Specification
 
@@ -305,7 +307,7 @@ bool http_parse_request_zero_copy(char *raw_stream, size_t stream_len, ParsedHtt
 
 int main(void) {
     // Sample raw HTTP request stream in stack memory (mutable for zero-copy parsing)
-    char http_payload[] = 
+    char http_payload[] =
         "POST /api/v2/payments HTTP/1.1\r\n"
         "Host: api.enterprise.corp\r\n"
         "Content-Type: application/json\r\n"
@@ -332,7 +334,9 @@ int main(void) {
 ## 10. Pure CLI / Command Interface
 
 ### 1. Compile with AddressSanitizer & Source Fortification
+
 Compile with maximum runtime bounds checking:
+
 ```bash
 gcc -std=c17 -Wall -Wextra -Werror -Wpedantic \
     -O2 -D_FORTIFY_SOURCE=3 -fsanitize=address,undefined \
@@ -342,13 +346,17 @@ gcc -std=c17 -Wall -Wextra -Werror -Wpedantic \
 ```
 
 ### 2. Run AddressSanitizer Memory Validation
+
 Execute binary to ensure zero buffer overruns:
+
 ```bash
 ./bin/http_parser
 ```
 
 ### 3. Check for Format String Warnings with Compiler Flags
+
 Audit format security across all source files:
+
 ```bash
 gcc -Wformat=2 -Wformat-security \
     -c src/http_header_parser.c -Iinclude
@@ -358,7 +366,7 @@ gcc -Wformat=2 -Wformat-security \
 
 ## 11. Advanced Architecture & Edge-Case Failure Modes
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                     STRING FAILURE RECOVERY MATRIX                             │
 ├──────────────────────┬────────────────────────┬────────────────────────────────┤
@@ -383,29 +391,37 @@ gcc -Wformat=2 -Wformat-security \
 ## 12. Detailed Sub-Components & Subsystems
 
 ### 1. GNU Libc Fortify Source Subsystem (`_FORTIFY_SOURCE=3`)
+
 * **Key Concepts**: Replaces standard libc calls (`memcpy`, `sprintf`) with compiler-instrumented bounds checks (`__memcpy_chk`, `__snprintf_chk`) at compile time.
 * **CLI / Tool Snippet**:
+
 ```bash
 objdump -d bin/http_parser | grep -i "_chk"
 ```
 
 ### 2. SIMD Accelerated `strlen` & `memchr` Engine
+
 * **Key Concepts**: glibc optimizes `strlen` using AVX-512 vector registers to scan 64 bytes for `\0` in a single CPU cycle.
 * **CLI / Tool Snippet**:
+
 ```bash
 perf stat -e instructions,cycles ./bin/http_parser 2>/dev/null || true
 ```
 
-### 3. POSIX Locale & Multibyte Subsystem (`<wchar.h>`)
+### 3. POSIX Locale & Multibyte Subsystem (``<wchar.h>``)
+
 * **Key Concepts**: Handles UTF-8 variable-length byte sequencing and wide-character transformations (`mbstowcs`, `wcstombs`).
 * **CLI / Tool Snippet**:
+
 ```bash
 locale
 ```
 
 ### 4. Non-Reentrant Static Memory Detector
+
 * **Key Concepts**: Static analysis tools detecting calls to non-thread-safe functions (`strtok`, `asctime`, `strerror`).
 * **CLI / Tool Snippet**:
+
 ```bash
 grep -nE "strtok\(|sprintf\(" src/*.c 2>/dev/null || true
 ```
@@ -415,6 +431,7 @@ grep -nE "strtok\(|sprintf\(" src/*.c 2>/dev/null || true
 ## 13. References (The 5+5 Rule)
 
 ### Official Documentation & Security Standards
+
 1. [ISO/IEC 9899:2018 (C17 Standard: Section 7.24 string.h)](https://www.iso.org/)
 2. [SEI CERT C Coding Standard: String Management Rules (STR30-C through STR38-C)](https://wiki.sei.cmu.edu/)
 3. [CWE-120: Buffer Copy without Checking Size of Input (Classic Buffer Overflow)](https://cwe.mitre.org/data/definitions/120.html)
@@ -422,17 +439,18 @@ grep -nE "strtok\(|sprintf\(" src/*.c 2>/dev/null || true
 5. [POSIX.1-2017: strtok_r and snprintf Function Specifications](https://pubs.opengroup.org/)
 
 ### Authoritative Engineering Textbooks & Systems Deep Dives
-6. [K. N. King: C Programming: A Modern Approach (Chapter 13: Strings)](https://knking.com/books/c2/)
-7. [Robert C. Seacord: Secure Coding in C and C++ (2nd Edition, Addison-Wesley)](https://www.oreilly.com/)
-8. [Brian W. Kernighan and Dennis M. Ritchie: The C Programming Language (Chapter 5.5: Character Pointers and Functions)](https://en.wikipedia.org/wiki/The_C_Programming_Language)
-9. [Eli Bendersky: Safer and High-Performance String Handling in C](https://eli.thegreenplace.net/)
-10. [High-Performance Linux Systems: Zero-Copy In-Place Network Protocol Parsing](https://www.kernel.org/)
+
+1. [K. N. King: C Programming: A Modern Approach (Chapter 13: Strings)](https://knking.com/books/c2/)
+2. [Robert C. Seacord: Secure Coding in C and C++ (2nd Edition, Addison-Wesley)](https://www.oreilly.com/)
+3. [Brian W. Kernighan and Dennis M. Ritchie: The C Programming Language (Chapter 5.5: Character Pointers and Functions)](https://en.wikipedia.org/wiki/The_C_Programming_Language)
+4. [Eli Bendersky: Safer and High-Performance String Handling in C](https://eli.thegreenplace.net/)
+5. [High-Performance Linux Systems: Zero-Copy In-Place Network Protocol Parsing](https://www.kernel.org/)
 
 ---
 
 ## 14. Universal FinOps & Hardware Cost Governance
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                        STRING FINOPS SAVINGS MATRIX                            │
 ├──────────────────────────┬──────────────────────────┬──────────────────────────┤
@@ -453,11 +471,14 @@ grep -nE "strtok\(|sprintf\(" src/*.c 2>/dev/null || true
 ```
 
 ### 1. Zero-Copy String Parsing vs Heap Allocation Economics
+
 In a high-throughput API gateway processing 200,000 HTTP requests per second:
-- **Traditional Heap Allocation (`strdup()` per header)**: Allocates 20 headers per request ($4,000,000\text{ heap allocations/sec}$), causing severe memory allocator lock contention and cache eviction ($85\text{ cloud proxy servers required} \times \$420/\text{month} = \mathbf{\$35,700/\text{month}}$).
-- **Zero-Copy In-Place Tokenization (`strtok_r`)**: Parses request buffers directly in stack/network memory with **zero heap allocations**.
-- Proxy cluster footprint drops from 85 to **8 cloud servers** ($8 \times \$420 = \mathbf{\$3,360/\text{month}}$).
-- **FinOps ROI**: Delivers **\$32,340/month (\$388,080/year) in direct cloud proxy compute savings**.
+
+* **Traditional Heap Allocation (`strdup()` per header)**: Allocates 20 headers per request ($4,000,000\text{ heap allocations/sec}$), causing severe memory allocator lock contention and cache eviction ($85\text{ cloud proxy servers required} \times \$420/\text{month} = \mathbf{\$35,700/\text{month}}$).
+* **Zero-Copy In-Place Tokenization (`strtok_r`)**: Parses request buffers directly in stack/network memory with **zero heap allocations**.
+* Proxy cluster footprint drops from 85 to **8 cloud servers** ($8 \times \$420 = \mathbf{\$3,360/\text{month}}$).
+* **FinOps ROI**: Delivers **\$32,340/month (\$388,080/year) in direct cloud proxy compute savings**.
 
 ### 2. Memory Fragmentation Elimination
-- Eliminating ephemeral string heap allocations prevents long-term glibc heap fragmentation, ensuring flat, predictable 12MB RSS memory footprints across 24/7 production services.
+
+* Eliminating ephemeral string heap allocations prevents long-term glibc heap fragmentation, ensuring flat, predictable 12MB RSS memory footprints across 24/7 production services.

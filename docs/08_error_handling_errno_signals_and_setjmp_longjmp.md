@@ -1,13 +1,14 @@
-# Module 08: C Error Handling, <errno.h>, POSIX Signals & Non-Local Jumps
+# Module 08: C Error Handling, `<errno.h>`, POSIX Signals & Non-Local Jumps
 
-**Track:** C Systems Programming, Memory Engineering & High-Performance Computing  
-**Category:** Error Propagation, Thread-Safe Diagnostics, Async-Signal Safety & setjmp/longjmp  
-**Standard Identifier:** `DOC-STD-UNIVERSAL-2026`  
+**Track:** C Systems Programming, Memory Engineering & High-Performance Computing
+**Category:** Error Propagation, Thread-Safe Diagnostics, Async-Signal Safety & setjmp/longjmp
+**Standard Identifier:** `DOC-STD-UNIVERSAL-2026`
 **Status:** ✅ Completed
 
 ---
 
 ## 📑 Table of Contents
+
 1. [High-Level Overview & Executive Summary](#1-high-level-overview--executive-summary)
 2. [Error Propagation Mechanics & <errno.h> Architecture](#2-error-propagation-mechanics--errnoh-architecture)
 3. [Thread-Safe Diagnostics: strerror_r & perror](#3-thread-safe-diagnostics-strerror_r--perror)
@@ -17,14 +18,12 @@
 7. [Certification & Engineering Essentials (MISRA-C / CERT-C Cheat Sheet)](#7-certification--engineering-essentials-misra-c--cert-c-cheat-sheet)
 8. [Comparative Analysis Matrix: Error Handling & Control Flow Mechanisms](#8-comparative-analysis-matrix-error-handling--control-flow-mechanisms)
 9. [Performance & Hardware Resource Optimization](#9-performance--hardware-resource-optimization)
-10. [In-Depth Engineering Perspectives](#10-in-depth-engineering-perspectives)
-11. [Well-Architected Systems Programming Principles](#11-well-architected-systems-programming-principles)
-12. [Step-by-Step Production Lab: Production Daemon with Signal Trapping & Panic Recovery](#12-step-by-step-production-lab-production-daemon-with-signal-trapping--panic-recovery)
-13. [Pure CLI / Command Interface](#13-pure-cli--command-interface)
-14. [Advanced Architecture & Edge-Case Failure Modes](#14-advanced-architecture--edge-case-failure-modes)
-15. [Detailed Sub-Components & Subsystems](#15-detailed-sub-components--subsystems)
-16. [References (The 5+5 Rule)](#16-references-the-55-rule)
-17. [Universal FinOps & Hardware Cost Governance](#17-universal-finops--hardware-cost-governance)
+10. [Step-by-Step Production Lab: Production Daemon with Signal Trapping & Panic Recovery](#10-step-by-step-production-lab-production-daemon-with-signal-trapping--panic-recovery)
+11. [Pure CLI / Command Interface](#11-pure-cli--command-interface)
+12. [Advanced Architecture & Edge-Case Failure Modes](#12-advanced-architecture--edge-case-failure-modes)
+13. [Detailed Sub-Components & Subsystems](#13-detailed-sub-components--subsystems)
+14. [References (The 5+5 Rule)](#14-references-the-55-rule)
+15. [Universal FinOps & Hardware Cost Governance](#15-universal-finops--hardware-cost-governance)
 
 ---
 
@@ -33,12 +32,13 @@
 In C systems programming, error handling is strictly explicit. Unlike languages with runtime-heavy exception unwinding engines (C++, Java, Python) that introduce hidden control-flow jumps, thread stack unwinding overhead, and binary size bloat, C relies on deterministic return codes, thread-local error indicators (**`<errno.h>`**), kernel signal trapping (**`<signal.h>`**), and low-level stack context jumps (**`<setjmp.h>`**).
 
 Mastering C error architecture requires mastering four distinct disciplines:
+
 1. **Explicit Error Code Propagation**: System calls and standard library functions return sentinel error values (`-1`, `NULL`, `EOF`) and populate the thread-local variable `errno` (`EINTR`, `EAGAIN`, `ENOMEM`, `ENOENT`).
 2. **Thread-Safe Diagnostic Formatting**: Utilizing **`strerror_r`** (reentrant) rather than unsafe legacy `strerror` (which uses a shared static buffer).
 3. **Async-Signal-Safe Event Handling**: Handling kernel interrupts (`SIGINT`, `SIGTERM`, `SIGHUP`, `SIGSEGV`) via **`sigaction`** while strictly calling only **Async-Signal-Safe functions** (such as `write()` and `_exit()`).
 4. **Non-Local Jumps & Panic Recovery**: Using **`setjmp`** and **`longjmp`** for high-performance parser error recovery and coroutine implementations.
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │               KERNEL SIGNAL DISPATCH & ASYNC-SIGNAL-SAFE EXECUTION             │
 ├────────────────────────────────────────────────────────────────────────────────┤
@@ -65,17 +65,18 @@ Mastering C error architecture requires mastering four distinct disciplines:
 ```
 
 ### 👔 Executive Summary (For Managers & Non-Technical Stakeholders)
+
 * **Business Purpose**: Guarantees that when unexpected system failures occur (network drops, disk-full events, server reboot requests), enterprise software reports precise diagnostic logs and recovers automatically without crashing.
 * **How It Works**: Checks the success status of every single operation, translating low-level operating system error codes into actionable error logs and executing graceful shutdown procedures.
 * **Key Business Value & ROI**: Delivers 99.999% high-availability service uptime, eliminates corrupted database states during emergency server restarts, and slashes customer incident triage times from hours to minutes.
 
 ---
 
-## 2. Error Propagation Mechanics & <errno.h> Architecture
+## 2. Error Propagation Mechanics & `<errno.h>` Architecture
 
 In POSIX and standard C, **`errno`** is defined as a thread-local lvalue macro expanding to `(*__errno_location())` (on Linux glibc). This guarantees that concurrent threads do not overwrite each other's error states!
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                     COMMON POSIX ERRNO STATUS CODES                            │
 ├───────────────────┬───────────────────┬────────────────────────────────────────┤
@@ -95,7 +96,8 @@ In POSIX and standard C, **`errno`** is defined as a thread-local lvalue macro e
 └───────────────────┴───────────────────┴────────────────────────────────────────┘
 ```
 
-### 2.1 The EINTR Syscall Retry Loop Invariant:
+### 2.1 The EINTR Syscall Retry Loop Invariant
+
 ```c
 ssize_t bytes_read;
 do {
@@ -109,7 +111,8 @@ do {
 
 Legacy `strerror(errno)` returns a pointer to an internal static string buffer. In a multithreaded server, another thread calling `strerror` simultaneously overwrites the buffer, resulting in corrupted error logs!
 
-### POSIX-Compliant `strerror_r` Pattern:
+### POSIX-Compliant `strerror_r` Pattern
+
 ```c
 #include <string.h>
 #include <stdio.h>
@@ -131,9 +134,10 @@ void log_system_error(const char *context_msg) {
 ## 4. POSIX Signals Architecture: sigaction & Async-Signal Safety
 
 ### 4.1 The Async-Signal-Safety Hazard
+
 When a signal handler executes, it interrupts normal program execution at an arbitrary CPU instruction. If the main thread was interrupted inside `malloc()` holding an internal allocator mutex, and the signal handler also calls `malloc()` or `printf()`, **the process deadlocks permanently!**
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │               ASYNC-SIGNAL-SAFE VS UNSAFE FUNCTION TAXONOMY                    │
 ├─────────────────────────────────────┬──────────────────────────────────────────┤
@@ -150,6 +154,7 @@ When a signal handler executes, it interrupts normal program execution at an arb
 ```
 
 ### 4.2 The `volatile sig_atomic_t` Invariant
+
 The only standard-compliant way to communicate between a signal handler and the main thread is via a variable of type **`volatile sig_atomic_t`** (an integer guaranteed to be read and written atomically by hardware without tearing):
 
 ```c
@@ -168,10 +173,11 @@ static void handle_sigterm(int sig) {
 ## 5. Non-Local Jumps: setjmp, longjmp & Panic Recovery
 
 The `<setjmp.h>` library provides low-level, non-local control flow jumps across function stack frames:
+
 * **`int setjmp(jmp_buf env)`**: Saves the current CPU registers, stack pointer (`%rsp`), and instruction pointer (`%rip`) into `env`. Returns `0` on direct invocation.
 * **`void longjmp(jmp_buf env, int val)`**: Restores CPU registers from `env`, causing program execution to jump back to the `setjmp` call site as if `setjmp` had just returned `val`!
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │               NON-LOCAL JUMP (`setjmp` / `longjmp`) CONTROL FLOW               │
 ├────────────────────────────────────────────────────────────────────────────────┤
@@ -188,12 +194,13 @@ The `<setjmp.h>` library provides low-level, non-local control flow jumps across
 └────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### ⚠️ The Volatile Local Variable Invariant:
+### ⚠️ The Volatile Local Variable Invariant
+
 Local automatic variables modified between `setjmp` and `longjmp` have indeterminate values after `longjmp` **unless they are qualified as `volatile`**!
 
 ---
 
-## 6. Compile-Time (static_assert) & Runtime (<assert.h>) Contracts
+## 6. Compile-Time (static_assert) & Runtime (`<assert.h>`) Contracts
 
 ```c
 #include <assert.h>
@@ -224,16 +231,16 @@ void process_buffer(const uint8_t *buf, size_t len) {
 
 | Mechanism | Speed Overhead | Thread Safety | Async Safe? | Best Production Use Case |
 | :--- | :--- | :--- | :--- | :--- |
-| **Return Code (`int`)** | **0 Cycles (Register %rax)**| **100% Thread-Safe**| **Yes** | Standard function return |
-| **`errno` Thread-Local**| 1 – 2 Cycles (TLS offset) | **100% Thread-Safe**| No | System call status |
-| **`sigaction` Trapper** | Context interrupt switch | Reentrant required | **Yes (Restricted)**| OS shutdown / signals |
-| **`setjmp` / `longjmp`**| Fast ($< 10\text{ns}$ jump)| Per-thread `jmp_buf`| No | Parser panic recovery |
+| **Return Code (`int`)** | **0 Cycles (Register %rax)** | **100% Thread-Safe** | **Yes** | Standard function return |
+| **`errno` Thread-Local** | 1 – 2 Cycles (TLS offset) | **100% Thread-Safe** | No | System call status |
+| **`sigaction` Trapper** | Context interrupt switch | Reentrant required | **Yes (Restricted)** | OS shutdown / signals |
+| **`setjmp` / `longjmp`** | Fast ($< 10\text{ns}$ jump) | Per-thread `jmp_buf` | No | Parser panic recovery |
 
 ---
 
 ## 9. Performance & Hardware Resource Optimization
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                         ERROR HANDLING TUNING PLAYBOOK                         │
 ├────────────────────────────────────────────────────────────────────────────────┤
@@ -249,9 +256,10 @@ void process_buffer(const uint8_t *buf, size_t len) {
 
 ## 10. Step-by-Step Production Lab: Production Daemon with Signal Trapping & Panic Recovery
 
-### File Structure:
-- [`src/daemon_engine.c`](file:///Users/frgonzal/Documents/maxine/c_lang/src/daemon_engine.c)
-- [`include/daemon_engine.h`](file:///Users/frgonzal/Documents/maxine/c_lang/include/daemon_engine.h)
+### File Structure
+
+* [`src/daemon_engine.c`](file:///Users/frgonzal/Documents/maxine/c_lang/src/daemon_engine.c)
+* [`include/daemon_engine.h`](file:///Users/frgonzal/Documents/maxine/c_lang/include/daemon_engine.h)
 
 ### Step 1: Author Header Specification
 
@@ -380,7 +388,9 @@ int main(void) {
 ## 11. Pure CLI / Command Interface
 
 ### 1. Compile Daemon Engine with POSIX Compatibility
+
 Compile with POSIX-2008 standards enabled:
+
 ```bash
 gcc -std=c17 -Wall -Wextra -Werror -Wpedantic \
     -D_POSIX_C_SOURCE=200809L \
@@ -390,13 +400,17 @@ gcc -std=c17 -Wall -Wextra -Werror -Wpedantic \
 ```
 
 ### 2. Run Daemon and Verify Signal Trapping
+
 Execute daemon binary:
+
 ```bash
 ./bin/daemon_engine
 ```
 
 ### 3. Send SIGTERM Signal via Terminal Command
+
 Send simulated termination signal to running process:
+
 ```bash
 kill -TERM $(pgrep daemon_engine) 2>/dev/null || true
 ```
@@ -405,7 +419,7 @@ kill -TERM $(pgrep daemon_engine) 2>/dev/null || true
 
 ## 12. Advanced Architecture & Edge-Case Failure Modes
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                    ERROR FAILURE RECOVERY MATRIX                               │
 ├──────────────────────┬────────────────────────┬────────────────────────────────┤
@@ -430,29 +444,37 @@ kill -TERM $(pgrep daemon_engine) 2>/dev/null || true
 ## 13. Detailed Sub-Components & Subsystems
 
 ### 1. POSIX Signal Table Subsystem
+
 * **Key Concepts**: Kernel per-process signal disposition vector mapping signals (`1..64`) to `SIG_DFL`, `SIG_IGN`, or custom handler function pointers.
 * **CLI / Tool Snippet**:
+
 ```bash
 man 7 signal
 ```
 
 ### 2. Thread-Local Error Number Provider (`__errno_location`)
+
 * **Key Concepts**: Function returning thread-local pointer to `int` variable storing last syscall error code.
 * **CLI / Tool Snippet**:
+
 ```bash
 nm bin/daemon_engine | grep -i errno 2>/dev/null || true
 ```
 
 ### 3. Register Context Saver (`sigsetjmp` / `siglongjmp`)
+
 * **Key Concepts**: Saves and restores signal mask alongside general-purpose CPU registers.
 * **CLI / Tool Snippet**:
+
 ```bash
 man sigsetjmp
 ```
 
 ### 4. Glibc Assert Handler (`__assert_fail`)
+
 * **Key Concepts**: Prints assertion failure details (`expression`, `file`, `line`, `function`) to `stderr` and invokes `abort()`.
 * **CLI / Tool Snippet**:
+
 ```bash
 objdump -d bin/daemon_engine | grep -i assert 2>/dev/null || true
 ```
@@ -462,6 +484,7 @@ objdump -d bin/daemon_engine | grep -i assert 2>/dev/null || true
 ## 14. References (The 5+5 Rule)
 
 ### Official Documentation & Academic Specifications
+
 1. [ISO/IEC 9899:2018 (C17 Standard: Section 7.5 <errno.h> & Section 7.13 <setjmp.h>)](https://www.iso.org/)
 2. [IEEE Std 1003.1-2017 (POSIX.1-2017): sigaction and Signal Concepts](https://pubs.opengroup.org/)
 3. [SEI CERT C Coding Standard: Signals (SIG30-C through SIG35-C)](https://wiki.sei.cmu.edu/)
@@ -469,17 +492,18 @@ objdump -d bin/daemon_engine | grep -i assert 2>/dev/null || true
 5. [MISRA C:2012 Guidelines: Rules 21.4, 21.5, 21.8](https://www.misra.org.uk/)
 
 ### Authoritative Engineering Textbooks & Systems Deep Dives
-6. [K. N. King: C Programming: A Modern Approach (Chapter 24: Error Handling)](https://knking.com/books/c2/)
-7. [W. Richard Stevens and Stephen A. Rago: Advanced Programming in the UNIX Environment (Chapter 10: Signals)](https://en.wikipedia.org/wiki/Advanced_Programming_in_the_Unix_Environment)
-8. [Brian W. Kernighan and Dennis M. Ritchie: The C Programming Language (Section 7.6: Error Handling)](https://en.wikipedia.org/wiki/The_C_Programming_Language)
-9. [Julia Evans: What Happens When an OS Signal is Delivered to a Process](https://jvns.ca/)
-10. [Eli Bendersky: Non-Local Control Flow in C with setjmp and longjmp](https://eli.thegreenplace.net/)
+
+1. [K. N. King: C Programming: A Modern Approach (Chapter 24: Error Handling)](https://knking.com/books/c2/)
+2. [W. Richard Stevens and Stephen A. Rago: Advanced Programming in the UNIX Environment (Chapter 10: Signals)](https://en.wikipedia.org/wiki/Advanced_Programming_in_the_Unix_Environment)
+3. [Brian W. Kernighan and Dennis M. Ritchie: The C Programming Language (Section 7.6: Error Handling)](https://en.wikipedia.org/wiki/The_C_Programming_Language)
+4. [Julia Evans: What Happens When an OS Signal is Delivered to a Process](https://jvns.ca/)
+5. [Eli Bendersky: Non-Local Control Flow in C with setjmp and longjmp](https://eli.thegreenplace.net/)
 
 ---
 
 ## 15. Universal FinOps & Hardware Cost Governance
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                     ERROR HANDLING FINOPS SAVINGS MATRIX                       │
 ├──────────────────────────┬──────────────────────────┬──────────────────────────┤
@@ -500,11 +524,14 @@ objdump -d bin/daemon_engine | grep -i assert 2>/dev/null || true
 ```
 
 ### 1. Graceful Shutdown vs Data Corruption Recovery Economics
+
 In an enterprise distributed key-value database processing 500,000 writes/sec:
-- Abruptly killing database processes with unhandled `SIGTERM` signals leaves un-flushed transaction logs in memory, requiring **4 to 6 hours of manual WAL repair and database rebuilds** ($~\$250,000\text{ downtime cost}$).
-- Trapping `SIGTERM` with `sigaction` and setting an atomic flag allows the database to flush all dirty pages to NVMe storage in under 500 milliseconds before exiting cleanly.
-- **FinOps ROI**: Eliminates **hundreds of thousands of dollars in disaster recovery labor and customer SLA penalties**.
+
+* Abruptly killing database processes with unhandled `SIGTERM` signals leaves un-flushed transaction logs in memory, requiring **4 to 6 hours of manual WAL repair and database rebuilds** ($~\$250,000\text{ downtime cost}$).
+* Trapping `SIGTERM` with `sigaction` and setting an atomic flag allows the database to flush all dirty pages to NVMe storage in under 500 milliseconds before exiting cleanly.
+* **FinOps ROI**: Eliminates **hundreds of thousands of dollars in disaster recovery labor and customer SLA penalties**.
 
 ### 2. C Zero-Cost Error Codes vs C++ Exception Table Bloat
-- C++ exception handling requires embedding complex DWARF `.eh_frame` exception unwinding tables, inflating executable binary sizes by 30% and adding non-deterministic memory latency during exceptions.
-- C's explicit integer return code convention operates in **zero extra memory and single-cycle register evaluation**.
+
+* C++ exception handling requires embedding complex DWARF `.eh_frame` exception unwinding tables, inflating executable binary sizes by 30% and adding non-deterministic memory latency during exceptions.
+* C's explicit integer return code convention operates in **zero extra memory and single-cycle register evaluation**.

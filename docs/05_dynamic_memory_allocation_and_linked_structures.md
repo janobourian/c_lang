@@ -1,13 +1,14 @@
 # Module 05: C Dynamic Memory Allocation, Heap Internals, Arenas & Intrusive Data Structures
 
-**Track:** C Systems Programming, Memory Engineering & High-Performance Computing  
-**Category:** Heap Management, Allocator Internals, Custom Arenas, Intrusive Lists & UAF Defense  
-**Standard Identifier:** `DOC-STD-UNIVERSAL-2026`  
+**Track:** C Systems Programming, Memory Engineering & High-Performance Computing
+**Category:** Heap Management, Allocator Internals, Custom Arenas, Intrusive Lists & UAF Defense
+**Standard Identifier:** `DOC-STD-UNIVERSAL-2026`
 **Status:** ✅ Completed
 
 ---
 
 ## 📑 Table of Contents
+
 1. [High-Level Overview & Executive Summary](#1-high-level-overview--executive-summary)
 2. [Operating System Heap Subsystems: brk, sbrk & mmap](#2-operating-system-heap-subsystems-brk-sbrk--mmap)
 3. [Standard Dynamic Allocation Primitives (malloc, calloc, realloc, free)](#3-standard-dynamic-allocation-primitives-malloc-calloc-realloc-free)
@@ -17,14 +18,12 @@
 7. [Certification & Engineering Essentials (MISRA-C / CERT-C Cheat Sheet)](#7-certification--engineering-essentials-misra-c--cert-c-cheat-sheet)
 8. [Comparative Analysis Matrix: Memory Allocation Strategies](#8-comparative-analysis-matrix-memory-allocation-strategies)
 9. [Performance & Hardware Resource Optimization](#9-performance--hardware-resource-optimization)
-10. [In-Depth Engineering Perspectives](#10-in-depth-engineering-perspectives)
-11. [Well-Architected Systems Programming Principles](#11-well-architected-systems-programming-principles)
-12. [Step-by-Step Production Lab: High-Performance Arena Allocator & Intrusive List](#12-step-by-step-production-lab-high-performance-arena-allocator--intrusive-list)
-13. [Pure CLI / Command Interface](#13-pure-cli--command-interface)
-14. [Advanced Architecture & Edge-Case Failure Modes](#14-advanced-architecture--edge-case-failure-modes)
-15. [Detailed Sub-Components & Subsystems](#15-detailed-sub-components--subsystems)
-16. [References (The 5+5 Rule)](#16-references-the-55-rule)
-17. [Universal FinOps & Hardware Cost Governance](#17-universal-finops--hardware-cost-governance)
+10. [Step-by-Step Production Lab: High-Performance Arena Allocator & Intrusive List](#10-step-by-step-production-lab-high-performance-arena-allocator--intrusive-list)
+11. [Pure CLI / Command Interface](#11-pure-cli--command-interface)
+12. [Advanced Architecture & Edge-Case Failure Modes](#12-advanced-architecture--edge-case-failure-modes)
+13. [Detailed Sub-Components & Subsystems](#13-detailed-sub-components--subsystems)
+14. [References (The 5+5 Rule)](#14-references-the-55-rule)
+15. [Universal FinOps & Hardware Cost Governance](#15-universal-finops--hardware-cost-governance)
 
 ---
 
@@ -36,7 +35,7 @@ At the operating system boundary, standard C allocator runtimes (e.g. GNU `ptmal
 
 To build crash-proof, enterprise-grade systems, engineers must strictly eliminate memory corruption vulnerabilities—including **Use-After-Free (UAF - CWE-416)**, **Double-Free (CWE-415)**, and **Memory Leaks (CWE-401)**—while utilizing high-speed **Custom Arena Allocators** and **Intrusive Data Structures (`container_of`)** to achieve $O(1)$ allocation performance with zero heap fragmentation.
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │               HEAP MEMORY ALLOCATION & KERNEL SYSCALL TOPOLOGY                 │
 ├────────────────────────────────────────────────────────────────────────────────┤
@@ -59,6 +58,7 @@ To build crash-proof, enterprise-grade systems, engineers must strictly eliminat
 ```
 
 ### 👔 Executive Summary (For Managers & Non-Technical Stakeholders)
+
 * **Business Purpose**: Enables software to scale dynamically to process unpredictable surges in customer transactions, big data files, and real-time media streams without running out of memory.
 * **How It Works**: Manually requests exact amounts of working memory from the server operating system when new work arrives and immediately returns it when completed, keeping the server lean and fast.
 * **Key Business Value & ROI**: Eliminates sudden server crashes caused by memory leaks, prevents catastrophic hacker takeover exploits (Use-After-Free), and lowers cloud server hosting costs by up to 60%.
@@ -67,7 +67,7 @@ To build crash-proof, enterprise-grade systems, engineers must strictly eliminat
 
 ## 2. Operating System Heap Subsystems: brk, sbrk & mmap
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                     BRK/SBRK VS MMAP KERNEL ALLOCATION MODES                   │
 ├───────────────────┬──────────────────────────┬─────────────────────────────────┤
@@ -91,7 +91,7 @@ To build crash-proof, enterprise-grade systems, engineers must strictly eliminat
 
 ## 3. Standard Dynamic Allocation Primitives (malloc, calloc, realloc, free)
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                   C STANDARD ALLOCATION PRIMITIVES IN C17                      │
 ├───────────────────┬────────────────────────────────────────────────────────────┤
@@ -111,6 +111,7 @@ To build crash-proof, enterprise-grade systems, engineers must strictly eliminat
 ```
 
 ### 3.1 The Defensive `realloc` Pattern
+
 Never assign `realloc` directly to the original pointer variable! If `realloc` fails, it returns `NULL` while leaving the original memory block allocated, resulting in an immediate **permanent memory leak**:
 
 ```c
@@ -131,7 +132,7 @@ data = temp; // Safe assignment!
 
 ## 4. Memory Safety Vulnerabilities: Use-After-Free, Double-Free & Leaks
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │               MASTER HEAP MEMORY VULNERABILITY TAXONOMY                        │
 ├──────────────────────┬──────────┬──────────────────────────────────────────────┤
@@ -151,7 +152,8 @@ data = temp; // Safe assignment!
 └──────────────────────┴──────────┴──────────────────────────────────────────────┘
 ```
 
-### Safe Free Invariant:
+### Safe Free Invariant
+
 ```c
 #define SAFE_FREE(ptr) do { free(ptr); (ptr) = NULL; } while(0)
 ```
@@ -160,7 +162,7 @@ data = temp; // Safe assignment!
 
 ## 5. Custom Memory Allocator Paradigms: Arena & Fixed-Block Pools
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                     ARENA (BUMP) VS FIXED-BLOCK POOL ALLOCATORS                │
 ├──────────────────────────┬──────────────────────────┬──────────────────────────┤
@@ -207,16 +209,16 @@ $$\text{Parent Pointer} = (\text{char *})\text{Ptr} - \text{offsetof}(\text{Pare
 
 | Feature | Standard `malloc/free` | Arena Allocator | Fixed-Size Block Pool | Static BSS Pool |
 | :--- | :--- | :--- | :--- | :--- |
-| **Allocation Latency** | Variable ($50-200\text{ns}$)| **Instant ($< 2\text{ns}$)**| **Instant ($< 5\text{ns}$)**| **0ns (Pre-allocated)** |
+| **Allocation Latency** | Variable ($50-200\text{ns}$) | **Instant ($< 2\text{ns}$)** | **Instant ($< 5\text{ns}$)** | **0ns (Pre-allocated)** |
 | **Fragmentation Risk** | **High** | **Zero** | **Zero** | **Zero** |
-| **Individual `free()`**| Yes | No (Bulk Only) | Yes | No |
+| **Individual `free()`** | Yes | No (Bulk Only) | Yes | No |
 | **Multithreaded Lock** | Mutex per Arena | Lock-Free per thread | Lock-Free CAS | Lock-Free |
 
 ---
 
 ## 9. Performance & Hardware Resource Optimization
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                         MEMORY TUNING PLAYBOOK                                 │
 ├────────────────────────────────────────────────────────────────────────────────┤
@@ -232,9 +234,10 @@ $$\text{Parent Pointer} = (\text{char *})\text{Ptr} - \text{offsetof}(\text{Pare
 
 ## 10. Step-by-Step Production Lab: High-Performance Arena Allocator & Intrusive List
 
-### File Structure:
-- [`src/arena_allocator.c`](file:///Users/frgonzal/Documents/maxine/c_lang/src/arena_allocator.c)
-- [`include/arena_allocator.h`](file:///Users/frgonzal/Documents/maxine/c_lang/include/arena_allocator.h)
+### File Structure
+
+* [`src/arena_allocator.c`](file:///Users/frgonzal/Documents/maxine/c_lang/src/arena_allocator.c)
+* [`include/arena_allocator.h`](file:///Users/frgonzal/Documents/maxine/c_lang/include/arena_allocator.h)
 
 ### Step 1: Author Header Specification
 
@@ -370,7 +373,9 @@ int main(void) {
 ## 11. Pure CLI / Command Interface
 
 ### 1. Compile with AddressSanitizer & LeakSanitizer
+
 Compile with runtime memory leak and UAF detection:
+
 ```bash
 gcc -std=c17 -Wall -Wextra -Werror -Wpedantic \
     -fsanitize=address,leak,undefined \
@@ -380,7 +385,9 @@ gcc -std=c17 -Wall -Wextra -Werror -Wpedantic \
 ```
 
 ### 2. Verify Zero Memory Leaks with Valgrind Memcheck
+
 Run comprehensive memory audit:
+
 ```bash
 valgrind --tool=memcheck \
     --leak-check=full \
@@ -389,7 +396,9 @@ valgrind --tool=memcheck \
 ```
 
 ### 3. Profile Memory Allocations with Massif Heap Profiler
+
 Capture peak heap memory utilization:
+
 ```bash
 valgrind --tool=massif ./bin/arena_demo \
     && ms_print massif.out.* | head -n 30
@@ -399,7 +408,7 @@ valgrind --tool=massif ./bin/arena_demo \
 
 ## 12. Advanced Architecture & Edge-Case Failure Modes
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                    MEMORY FAILURE RECOVERY MATRIX                              │
 ├──────────────────────┬────────────────────────┬────────────────────────────────┤
@@ -424,29 +433,37 @@ valgrind --tool=massif ./bin/arena_demo \
 ## 13. Detailed Sub-Components & Subsystems
 
 ### 1. GNU Libc Chunk Header Subsystem
+
 * **Key Concepts**: 8-byte chunk metadata header preceding every malloc pointer (`prev_size`, `size`, `A|M|P` status bits).
 * **CLI / Tool Snippet**:
+
 ```bash
 gdb --batch -ex "x/4gx ptr-8" bin/arena_demo 2>/dev/null || true
 ```
 
 ### 2. jemalloc Multi-Threaded Arena Subsystem
+
 * **Key Concepts**: Allocates dedicated memory arenas per CPU core to eliminate global mutex lock contention across threads.
 * **CLI / Tool Snippet**:
+
 ```bash
 MALLOC_CONF="stats_print:true" ./bin/arena_demo 2>/dev/null || true
 ```
 
 ### 3. Linux Kernel Virtual Memory Mapper (`/proc/self/maps`)
+
 * **Key Concepts**: Virtual memory page mapping table tracking mapped segments, permissions, and backing files.
 * **CLI / Tool Snippet**:
+
 ```bash
 cat /proc/self/maps 2>/dev/null || true
 ```
 
 ### 4. Linux Kernel Intrusive List Engine (`<linux/list.h>`)
+
 * **Key Concepts**: Circular doubly linked list implementation embedded in Linux kernel `task_struct` and network device drivers.
 * **CLI / Tool Snippet**:
+
 ```bash
 grep -n "container_of" include/arena_allocator.h
 ```
@@ -456,6 +473,7 @@ grep -n "container_of" include/arena_allocator.h
 ## 14. References (The 5+5 Rule)
 
 ### Official Documentation & Academic Specifications
+
 1. [ISO/IEC 9899:2018 (C17 Standard: Section 7.22.3 Memory Management Functions)](https://www.iso.org/)
 2. [SEI CERT C Coding Standard: Dynamic Memory Allocation (MEM30-C through MEM36-C)](https://wiki.sei.cmu.edu/)
 3. [CWE-416: Use After Free Security Vulnerability Catalog](https://cwe.mitre.org/data/definitions/416.html)
@@ -463,17 +481,18 @@ grep -n "container_of" include/arena_allocator.h
 5. [POSIX.1-2017: posix_memalign and mmap System Call Specifications](https://pubs.opengroup.org/)
 
 ### Authoritative Engineering Textbooks & Systems Deep Dives
-6. [K. N. King: C Programming: A Modern Approach (Chapter 17: Advanced Uses of Pointers & Dynamic Memory)](https://knking.com/books/c2/)
-7. [Randal E. Bryant and David R. O'Hallaron: Computer Systems: A Programmer's Perspective (Chapter 9: Virtual Memory & Dynamic Memory Allocation)](https://csapp.cs.cmu.edu/)
-8. [Robert Love: Linux Kernel Development (Chapter 6: Kernel Data Structures)](https://en.wikipedia.org/wiki/Robert_Love)
-9. [Jason Evans: Scalable Memory Allocation Using jemalloc](https://jemalloc.net/)
-10. [High-Performance Linux Systems: Custom Memory Arenas vs General-Purpose Heap Allocators](https://www.kernel.org/)
+
+1. [K. N. King: C Programming: A Modern Approach (Chapter 17: Advanced Uses of Pointers & Dynamic Memory)](https://knking.com/books/c2/)
+2. [Randal E. Bryant and David R. O'Hallaron: Computer Systems: A Programmer's Perspective (Chapter 9: Virtual Memory & Dynamic Memory Allocation)](https://csapp.cs.cmu.edu/)
+3. [Robert Love: Linux Kernel Development (Chapter 6: Kernel Data Structures)](https://en.wikipedia.org/wiki/Robert_Love)
+4. [Jason Evans: Scalable Memory Allocation Using jemalloc](https://jemalloc.net/)
+5. [High-Performance Linux Systems: Custom Memory Arenas vs General-Purpose Heap Allocators](https://www.kernel.org/)
 
 ---
 
 ## 15. Universal FinOps & Hardware Cost Governance
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                        MEMORY FINOPS SAVINGS MATRIX                            │
 ├──────────────────────────┬──────────────────────────┬──────────────────────────┤
@@ -494,12 +513,15 @@ grep -n "container_of" include/arena_allocator.h
 ```
 
 ### 1. Arena Allocator vs glibc `malloc` Lock Contention Economics
+
 In a 64-core enterprise server processing 1,000,000 requests/sec:
-- Standard `malloc/free` triggers severe allocator lock contention across 64 threads, burning 35% of total CPU time purely inside glibc memory mutexes ($20\text{ cloud instances required} \times \$850/\text{month} = \mathbf{\$17,000/\text{month}}$).
-- Providing each thread with a pre-allocated **1MB Linear Memory Arena** eliminates 100% of thread locks and executes allocations in $< 2\text{ns}$ (single pointer addition).
-- Required server instance fleet drops from 20 to **4 instances** ($4 \times \$850 = \mathbf{\$3,400/\text{month}}$).
-- **FinOps ROI**: Delivers **\$13,600/month (\$163,200/year) in direct compute infrastructure savings**.
+
+* Standard `malloc/free` triggers severe allocator lock contention across 64 threads, burning 35% of total CPU time purely inside glibc memory mutexes ($20\text{ cloud instances required} \times \$850/\text{month} = \mathbf{\$17,000/\text{month}}$).
+* Providing each thread with a pre-allocated **1MB Linear Memory Arena** eliminates 100% of thread locks and executes allocations in $< 2\text{ns}$ (single pointer addition).
+* Required server instance fleet drops from 20 to **4 instances** ($4 \times \$850 = \mathbf{\$3,400/\text{month}}$).
+* **FinOps ROI**: Delivers **\$13,600/month (\$163,200/year) in direct compute infrastructure savings**.
 
 ### 2. Intrusive Data Structure Allocation Savings
-- In an in-memory graph database storing 100,000,000 connected nodes, wrapping each item in a non-intrusive `Node` object requires 100,000,000 extra `malloc` calls (adding 3.2 Gigabytes of heap metadata overhead).
-- Intrusive `ListNode` embeds pointers directly in the payload, eliminating all 100M allocator calls and saving **3.2GB of RAM per server node**.
+
+* In an in-memory graph database storing 100,000,000 connected nodes, wrapping each item in a non-intrusive `Node` object requires 100,000,000 extra `malloc` calls (adding 3.2 Gigabytes of heap metadata overhead).
+* Intrusive `ListNode` embeds pointers directly in the payload, eliminating all 100M allocator calls and saving **3.2GB of RAM per server node**.

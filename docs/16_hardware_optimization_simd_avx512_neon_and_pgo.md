@@ -1,13 +1,14 @@
 # Module 16: Hardware Optimization, SIMD Vectorization (AVX-512, NEON) & PGO
 
-**Track:** C Systems Programming, Memory Engineering & High-Performance Computing  
-**Category:** CPU Microarchitecture, SIMD Intrinsics, FMA, Branch Prediction & Profile-Guided Optimization  
-**Standard Identifier:** `DOC-STD-UNIVERSAL-2026`  
+**Track:** C Systems Programming, Memory Engineering & High-Performance Computing
+**Category:** CPU Microarchitecture, SIMD Intrinsics, FMA, Branch Prediction & Profile-Guided Optimization
+**Standard Identifier:** `DOC-STD-UNIVERSAL-2026`
 **Status:** ✅ Completed
 
 ---
 
 ## 📑 Table of Contents
+
 1. [High-Level Overview & Executive Summary](#1-high-level-overview--executive-summary)
 2. [CPU Microarchitecture & Vector Widths (SSE, AVX2, AVX-512, NEON)](#2-cpu-microarchitecture--vector-widths-sse-avx2-avx-512-neon)
 3. [Intel/AMD AVX2 & FMA Intrinsics Architecture (<immintrin.h>)](#3-intelamd-avx2--fma-intrinsics-architecture-immintrinh)
@@ -17,14 +18,12 @@
 7. [Certification & Engineering Essentials (MISRA-C / CERT-C Cheat Sheet)](#7-certification--engineering-essentials-misra-c--cert-c-cheat-sheet)
 8. [Comparative Analysis Matrix: Computational Execution Modalities](#8-comparative-analysis-matrix-computational-execution-modalities)
 9. [Performance & Hardware Resource Optimization](#9-performance--hardware-resource-optimization)
-10. [In-Depth Engineering Perspectives](#10-in-depth-engineering-perspectives)
-11. [Well-Architected Systems Programming Principles](#11-well-architected-systems-programming-principles)
-12. [Step-by-Step Production Lab: High-Performance SIMD Vectorized Math Engine](#12-step-by-step-production-lab-high-performance-simd-vectorized-math-engine)
-13. [Pure CLI / Command Interface](#13-pure-cli--command-interface)
-14. [Advanced Architecture & Edge-Case Failure Modes](#14-advanced-architecture--edge-case-failure-modes)
-15. [Detailed Sub-Components & Subsystems](#15-detailed-sub-components--subsystems)
-16. [References (The 5+5 Rule)](#16-references-the-55-rule)
-17. [Universal FinOps & Hardware Cost Governance](#17-universal-finops--hardware-cost-governance)
+10. [Step-by-Step Production Lab: High-Performance SIMD Vectorized Math Engine](#10-step-by-step-production-lab-high-performance-simd-vectorized-math-engine)
+11. [Pure CLI / Command Interface](#11-pure-cli--command-interface)
+12. [Advanced Architecture & Edge-Case Failure Modes](#12-advanced-architecture--edge-case-failure-modes)
+13. [Detailed Sub-Components & Subsystems](#13-detailed-sub-components--subsystems)
+14. [References (The 5+5 Rule)](#14-references-the-55-rule)
+15. [Universal FinOps & Hardware Cost Governance](#15-universal-finops--hardware-cost-governance)
 
 ---
 
@@ -35,12 +34,13 @@ Achieving maximum silicon performance requires aligning C code with modern CPU m
 Rather than processing numbers one-by-one sequentially in scalar arithmetic registers (where 16 additions require 16 discrete instructions), SIMD vectorization packs multiple numerical values into wide vector registers (128-bit, 256-bit, or 512-bit) and executes parallel arithmetic calculations in a **single hardware clock cycle**.
 
 Mastering hardware performance optimization requires:
+
 1. Direct implementation of **AVX2 / AVX-512 Intrinsics** (`<immintrin.h>`) and **ARM64 NEON Intrinsics** (`<arm_neon.h>`).
 2. Hardware-accelerated **Fused Multiply-Add (FMA)** calculations ($A \times B + C$ in a single CPU cycle with zero intermediate rounding error).
 3. Guiding silicon branch predictors using **`__builtin_expect` (`likely` / `unlikely`)**.
 4. Deploying **Profile-Guided Optimization (PGO)**, where the compiler uses real production telemetry to restructure machine code layout for maximum L1 instruction cache hit rates.
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │               SCALAR VS SIMD 256-BIT VECTOR EXECUTION (AVX2)                   │
 ├────────────────────────────────────────────────────────────────────────────────┤
@@ -59,6 +59,7 @@ Mastering hardware performance optimization requires:
 ```
 
 ### 👔 Executive Summary (For Managers & Non-Technical Stakeholders)
+
 * **Business Purpose**: Squeezes maximum computing speed out of existing enterprise server processors, allowing massive AI, analytics, and financial calculations to finish in seconds without purchasing extra hardware.
 * **How It Works**: Re-engineers mathematical equations to process 8 to 16 numbers simultaneously in a single processor heartbeat (SIMD) and uses real-world customer usage profiles to streamline machine code.
 * **Key Business Value & ROI**: Slashes enterprise cloud compute bills by 50% to 80% for high-throughput database, video encoding, machine learning, and financial trading workloads.
@@ -67,7 +68,7 @@ Mastering hardware performance optimization requires:
 
 ## 2. CPU Microarchitecture & Vector Widths (SSE, AVX2, AVX-512, NEON)
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                     SIMD HARDWARE VECTOR REGISTER CAPACITIES                   │
 ├───────────────────┬───────────────┬───────────────────┬────────────────────────┤
@@ -85,9 +86,9 @@ Mastering hardware performance optimization requires:
 
 ---
 
-## 3. Intel/AMD AVX2 & FMA Intrinsics Architecture (<immintrin.h>)
+## 3. Intel/AMD AVX2 & FMA Intrinsics Architecture (`<immintrin.h>`)
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                     CORE AVX2 & FMA INTRINSICS TABLE                           │
 ├──────────────────────────┬─────────────────────────────────────────────────────┤
@@ -108,7 +109,7 @@ Mastering hardware performance optimization requires:
 
 ---
 
-## 4. ARM64 NEON Vector Intrinsics (<arm_neon.h>)
+## 4. ARM64 NEON Vector Intrinsics (`<arm_neon.h>`)
 
 On ARM64 architectures (Apple Silicon M-series, AWS Graviton 3/4), 128-bit vector pipelines execute NEON instructions:
 
@@ -142,7 +143,7 @@ if (unlikely(memory_allocation_failed)) {
 
 ## 6. Profile-Guided Optimization (PGO) Two-Pass Workflow
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │               PROFILE-GUIDED OPTIMIZATION (PGO) EXECUTION PIPELINE             │
 ├────────────────────────────────────────────────────────────────────────────────┤
@@ -175,13 +176,13 @@ if (unlikely(memory_allocation_failed)) {
 | **Scalar C Loop** | 16 Instructions | $1\times$ (Baseline) | Any CPU |
 | **ARM64 NEON** | 4 Instructions | **$4\times$ Speedup** | ARMv8 / Graviton |
 | **AVX2 + FMA** | 2 Instructions | **$8\times$ Speedup** | Haswell / Zen 1+ |
-| **AVX-512** | **1 Instruction** | **$16\times$ Speedup**| Xeon Skylake+ / Zen 4+|
+| **AVX-512** | **1 Instruction** | **$16\times$ Speedup** | Xeon Skylake+ / Zen 4+ |
 
 ---
 
 ## 9. Performance & Hardware Resource Optimization
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                         HARDWARE VECTOR TUNING PLAYBOOK                        │
 ├────────────────────────────────────────────────────────────────────────────────┤
@@ -197,9 +198,10 @@ if (unlikely(memory_allocation_failed)) {
 
 ## 10. Step-by-Step Production Lab: High-Performance SIMD Vectorized Math Engine
 
-### File Structure:
-- [`src/simd_math.c`](file:///Users/frgonzal/Documents/maxine/c_lang/src/simd_math.c)
-- [`include/simd_math.h`](file:///Users/frgonzal/Documents/maxine/c_lang/include/simd_math.h)
+### File Structure
+
+* [`src/simd_math.c`](file:///Users/frgonzal/Documents/maxine/c_lang/src/simd_math.c)
+* [`include/simd_math.h`](file:///Users/frgonzal/Documents/maxine/c_lang/include/simd_math.h)
 
 ### Step 1: Author Header Specification
 
@@ -330,7 +332,9 @@ int main(void) {
 ## 11. Pure CLI / Command Interface
 
 ### 1. Compile with Native Hardware SIMD Vectorization
+
 Compile with AVX2 and FMA support:
+
 ```bash
 gcc -std=c17 -Wall -Wextra -Werror -Wpedantic \
     -O3 -march=native -mfma \
@@ -340,14 +344,18 @@ gcc -std=c17 -Wall -Wextra -Werror -Wpedantic \
 ```
 
 ### 2. Disassemble and Verify FMA Vector Instructions
+
 Verify generation of `vfmadd231ps` hardware instructions:
+
 ```bash
 objdump -d -M intel bin/simd_math \
     | grep -E "vfmadd|vaddps|vmulps"
 ```
 
 ### 3. Run Two-Pass Profile-Guided Optimization (PGO) Build
+
 Execute PGO compilation pipeline:
+
 ```bash
 gcc -O3 -march=native -fprofile-generate -Iinclude -o bin/pgo_gen src/simd_math.c \
     && ./bin/pgo_gen \
@@ -358,7 +366,7 @@ gcc -O3 -march=native -fprofile-generate -Iinclude -o bin/pgo_gen src/simd_math.
 
 ## 12. Advanced Architecture & Edge-Case Failure Modes
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                    VECTORIZATION FAILURE RECOVERY MATRIX                       │
 ├──────────────────────┬────────────────────────┬────────────────────────────────┤
@@ -383,29 +391,37 @@ gcc -O3 -march=native -fprofile-generate -Iinclude -o bin/pgo_gen src/simd_math.
 ## 13. Detailed Sub-Components & Subsystems
 
 ### 1. CPU Fused Multiply-Add (FMA) Pipeline
+
 * **Key Concepts**: Silicon arithmetic unit computing $A \times B + C$ in a single clock cycle with zero intermediate precision truncation.
 * **CLI / Tool Snippet**:
+
 ```bash
 lscpu | grep -i fma 2>/dev/null || true
 ```
 
 ### 2. GCC Tree Vectorizer Subsystem
+
 * **Key Concepts**: AST transformation engine analyzing loop strides and dependencies to emit SIMD packed operations.
 * **CLI / Tool Snippet**:
+
 ```bash
 gcc -O3 -fopt-info-vec-optimized src/simd_math.c -Iinclude
 ```
 
 ### 3. Linux Perf Hardware Performance Counters
+
 * **Key Concepts**: Inspects CPU hardware counters (`instructions`, `cycles`, `branch-misses`).
 * **CLI / Tool Snippet**:
+
 ```bash
 perf stat -e instructions,cycles,branch-misses ./bin/simd_math 2>/dev/null || true
 ```
 
 ### 4. PGO Profile Counter Engine (`.gcda` / `gcov`)
+
 * **Key Concepts**: Runtime profiler recording execution frequencies for every branch and basic block.
 * **CLI / Tool Snippet**:
+
 ```bash
 ls -la *.gcda 2>/dev/null || true
 ```
@@ -415,6 +431,7 @@ ls -la *.gcda 2>/dev/null || true
 ## 14. References (The 5+5 Rule)
 
 ### Official Documentation & Academic Specifications
+
 1. [Intel Intrinsics Guide: AVX2, FMA, and AVX-512 Technical Reference](https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html)
 2. [ARM Architecture Reference: NEON SIMD Vector Programming Guide](https://developer.arm.com/architectures/instruction-sets/simd-isas/neon)
 3. [GNU GCC Manual: Options That Control Optimization (Auto-Vectorization & PGO)](https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html)
@@ -422,17 +439,18 @@ ls -la *.gcda 2>/dev/null || true
 5. [ISO/IEC 9899:2018 (C17 Standard: Section 6.7.3.1 Type Qualifiers - restrict)](https://www.iso.org/)
 
 ### Authoritative Engineering Textbooks & Systems Deep Dives
-6. [Brendan Gregg: Systems Performance: Enterprise and the Cloud (Chapter 6: CPUs)](https://www.brendangregg.com/)
-7. [Dan Luu: Vectorized String and Array Operations in C: Benchmarks](https://danluu.com/)
-8. [Eli Bendersky: Profile-Guided Optimization in GCC and Clang](https://eli.thegreenplace.net/)
-9. [Ulrich Drepper: What Every Programmer Should Know About Memory (SIMD and Cache Alignment)](https://people.freebsd.org/~lstewart/articles/cpumemory.pdf)
-10. [High-Performance Linux Systems: SIMD Vector Math and FMA Optimization](https://www.kernel.org/)
+
+1. [Brendan Gregg: Systems Performance: Enterprise and the Cloud (Chapter 6: CPUs)](https://www.brendangregg.com/)
+2. [Dan Luu: Vectorized String and Array Operations in C: Benchmarks](https://danluu.com/)
+3. [Eli Bendersky: Profile-Guided Optimization in GCC and Clang](https://eli.thegreenplace.net/)
+4. [Ulrich Drepper: What Every Programmer Should Know About Memory (SIMD and Cache Alignment)](https://people.freebsd.org/~lstewart/articles/cpumemory.pdf)
+5. [High-Performance Linux Systems: SIMD Vector Math and FMA Optimization](https://www.kernel.org/)
 
 ---
 
 ## 15. Universal FinOps & Hardware Cost Governance
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                         SIMD FINOPS SAVINGS MATRIX                             │
 ├──────────────────────────┬──────────────────────────┬──────────────────────────┤
@@ -453,11 +471,14 @@ ls -la *.gcda 2>/dev/null || true
 ```
 
 ### 1. SIMD Vectorization vs Cloud Fleet Sizing Economics
+
 In an image processing and financial risk simulation service processing 100,000,000 vector calculations daily:
-- **Scalar C Execution**: Requires 16 CPU instructions per element ($30\text{ cloud compute nodes required} \times \$960/\text{month} = \mathbf{\$28,800/\text{month}}$).
-- **SIMD AVX2 + FMA Vectorization**: Computes 8 elements per cycle in a single hardware instruction, reducing calculation times by **75%**.
-- Required cloud node fleet drops from 30 to **7 nodes** ($7 \times \$960 = \mathbf{\$6,720/\text{month}}$).
-- **FinOps ROI**: Delivers **\$22,080/month (\$264,960/year) in direct compute infrastructure savings**.
+
+* **Scalar C Execution**: Requires 16 CPU instructions per element ($30\text{ cloud compute nodes required} \times \$960/\text{month} = \mathbf{\$28,800/\text{month}}$).
+* **SIMD AVX2 + FMA Vectorization**: Computes 8 elements per cycle in a single hardware instruction, reducing calculation times by **75%**.
+* Required cloud node fleet drops from 30 to **7 nodes** ($7 \times \$960 = \mathbf{\$6,720/\text{month}}$).
+* **FinOps ROI**: Delivers **\$22,080/month (\$264,960/year) in direct compute infrastructure savings**.
 
 ### 2. Profile-Guided Optimization (PGO) Free Compute Gains
-- Recompiling production C services with PGO requires zero hardware purchases, delivering a free **15% to 22% increase in request throughput per core** purely through optimized code layout and branch alignment.
+
+* Recompiling production C services with PGO requires zero hardware purchases, delivering a free **15% to 22% increase in request throughput per core** purely through optimized code layout and branch alignment.

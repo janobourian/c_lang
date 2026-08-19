@@ -1,13 +1,14 @@
 # Module 10: UNIX System Calls, File Descriptor Architecture & Kernel I/O Primitives
 
-**Track:** C Systems Programming, Memory Engineering & High-Performance Computing  
-**Category:** POSIX System Calls, VFS Three-Tier Tables, File Locking, dup2 & Atomic I/O  
-**Standard Identifier:** `DOC-STD-UNIVERSAL-2026`  
+**Track:** C Systems Programming, Memory Engineering & High-Performance Computing
+**Category:** POSIX System Calls, VFS Three-Tier Tables, File Locking, dup2 & Atomic I/O
+**Standard Identifier:** `DOC-STD-UNIVERSAL-2026`
 **Status:** ✅ Completed
 
 ---
 
 ## 📑 Table of Contents
+
 1. [High-Level Overview & Executive Summary](#1-high-level-overview--executive-summary)
 2. [User-to-Kernel Syscall Transition Boundary (Ring 3 to Ring 0)](#2-user-to-kernel-syscall-transition-boundary-ring-3-to-ring-0)
 3. [The Three-Tier Kernel File Table Architecture](#3-the-three-tier-kernel-file-table-architecture)
@@ -17,14 +18,12 @@
 7. [Certification & Engineering Essentials (MISRA-C / CERT-C Cheat Sheet)](#7-certification--engineering-essentials-misra-c--cert-c-cheat-sheet)
 8. [Comparative Analysis Matrix: Standard Library Streams vs Direct Syscalls](#8-comparative-analysis-matrix-standard-library-streams-vs-direct-syscalls)
 9. [Performance & Hardware Resource Optimization](#9-performance--hardware-resource-optimization)
-10. [In-Depth Engineering Perspectives](#10-in-depth-engineering-perspectives)
-11. [Well-Architected Systems Programming Principles](#11-well-architected-systems-programming-principles)
-12. [Step-by-Step Production Lab: Atomic Write-Ahead Logger with fcntl Record Locking](#12-step-by-step-production-lab-atomic-write-ahead-logger-with-fcntl-record-locking)
-13. [Pure CLI / Command Interface](#13-pure-cli--command-interface)
-14. [Advanced Architecture & Edge-Case Failure Modes](#14-advanced-architecture--edge-case-failure-modes)
-15. [Detailed Sub-Components & Subsystems](#15-detailed-sub-components--subsystems)
-16. [References (The 5+5 Rule)](#16-references-the-55-rule)
-17. [Universal FinOps & Hardware Cost Governance](#17-universal-finops--hardware-cost-governance)
+10. [Step-by-Step Production Lab: Atomic Write-Ahead Logger with fcntl Record Locking](#10-step-by-step-production-lab-atomic-write-ahead-logger-with-fcntl-record-locking)
+11. [Pure CLI / Command Interface](#11-pure-cli--command-interface)
+12. [Advanced Architecture & Edge-Case Failure Modes](#12-advanced-architecture--edge-case-failure-modes)
+13. [Detailed Sub-Components & Subsystems](#13-detailed-sub-components--subsystems)
+14. [References (The 5+5 Rule)](#14-references-the-55-rule)
+15. [Universal FinOps & Hardware Cost Governance](#15-universal-finops--hardware-cost-governance)
 
 ---
 
@@ -35,12 +34,13 @@ In UNIX and Linux systems architectures, all hardware resources and communicatio
 To read or write data, an application program must cross the privileged hardware boundary from **User Space (Ring 3)** into **Kernel Space (Ring 0)** by executing **System Calls (Syscalls)**: `openat`, `read`, `write`, `close`, `lseek`, `pread`, `pwrite`, `dup2`, and `fcntl`.
 
 Mastering UNIX systems programming requires understanding:
+
 1. The hardware mechanics of CPU context switches during a system call trap (`syscall` instruction).
 2. The **Three-Tier Kernel Table Architecture** connecting per-process FD tables to global open file tables and VFS Inodes.
 3. Thread-safe atomic positioned I/O (**`pread` / `pwrite`**) that bypasses shared seek pointer races.
 4. Process-wide file synchronization and multi-process concurrency control using **POSIX Advisory Record Locking (`fcntl F_SETLK`)**.
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │               THE THREE-TIER LINUX KERNEL FILE TABLE ARCHITECTURE              │
 ├────────────────────────────────────────────────────────────────────────────────┤
@@ -70,6 +70,7 @@ Mastering UNIX systems programming requires understanding:
 ```
 
 ### 👔 Executive Summary (For Managers & Non-Technical Stakeholders)
+
 * **Business Purpose**: Gives enterprise software direct, ultra-fast access to physical server storage drives and network cards without any intermediate software delays.
 * **How It Works**: Connects applications directly to the core operating system kernel using numbered handles (File Descriptors), enforcing strict file locking so multiple processes never corrupt shared database records.
 * **Key Business Value & ROI**: Guarantees zero data corruption during simultaneous database writes, delivers the fastest possible disk I/O throughput, and slashes cloud storage access latency by 80%.
@@ -79,6 +80,7 @@ Mastering UNIX systems programming requires understanding:
 ## 2. User-to-Kernel Syscall Transition Boundary (Ring 3 to Ring 0)
 
 When a C program calls `read(fd, buf, count)`:
+
 1. The compiler loads the syscall number (`__NR_read = 0` on x86-64) into register `%rax`, and arguments into `%rdi` (fd), `%rsi` (buf), and `%rdx` (count).
 2. The CPU executes the `syscall` machine instruction, transitioning the CPU from User Mode (Ring 3) to Kernel Mode (Ring 0).
 3. The CPU hardware switches the stack pointer `%rsp` to the thread's **Kernel Stack** and jumps to the kernel's `system_call_entry` vector.
@@ -89,7 +91,7 @@ When a C program calls `read(fd, buf, count)`:
 
 ## 3. The Three-Tier Kernel File Table Architecture
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │               THREE-TIER TABLE RELATIONSHIPS & INVARIANTS                      │
 ├───────────────────┬───────────────────┬────────────────────────────────────────┤
@@ -111,7 +113,7 @@ When a C program calls `read(fd, buf, count)`:
 
 ## 4. Core POSIX I/O System Calls (openat, read, write, pread/pwrite)
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                     CORE SYSTEM CALL SPECIFICATIONS                            │
 ├───────────────────┬────────────────────────────────────────────────────────────┤
@@ -183,16 +185,16 @@ if (fcntl(fd, F_SETLK, &fl) == -1) {
 | Feature | Standard Libc Streams (`FILE*`) | Direct POSIX Syscalls (`int fd`) |
 | :--- | :--- | :--- |
 | **Buffering** | **In-memory userspace (8KB)** | **None (Direct Kernel Trap)** |
-| **Atomic Positioned I/O**| No (Requires `fseek`) | **Yes (`pread()` / `pwrite()`)** |
-| **Memory Efficiency** | ~1KB per open `FILE` object | **0 Bytes (Kernel-managed integer)**|
-| **File Locking (`fcntl`)**| Must extract `fileno(fp)` | **Native (`fcntl()`)** |
-| **Best Use Case** | Text parsing, reports | **Databases, WAL, High-Speed Sockets**|
+| **Atomic Positioned I/O** | No (Requires `fseek`) | **Yes (`pread()` / `pwrite()`)** |
+| **Memory Efficiency** | ~1KB per open `FILE` object | **0 Bytes (Kernel-managed integer)** |
+| **File Locking (`fcntl`)** | Must extract `fileno(fp)` | **Native (`fcntl()`)** |
+| **Best Use Case** | Text parsing, reports | **Databases, WAL, High-Speed Sockets** |
 
 ---
 
 ## 9. Performance & Hardware Resource Optimization
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                         SYSCALL TUNING PLAYBOOK                                │
 ├────────────────────────────────────────────────────────────────────────────────┤
@@ -208,9 +210,10 @@ if (fcntl(fd, F_SETLK, &fl) == -1) {
 
 ## 10. Step-by-Step Production Lab: Atomic Write-Ahead Logger with fcntl Record Locking
 
-### File Structure:
-- [`src/wal_logger.c`](file:///Users/frgonzal/Documents/maxine/c_lang/src/wal_logger.c)
-- [`include/wal_logger.h`](file:///Users/frgonzal/Documents/maxine/c_lang/include/wal_logger.h)
+### File Structure
+
+* [`src/wal_logger.c`](file:///Users/frgonzal/Documents/maxine/c_lang/src/wal_logger.c)
+* [`include/wal_logger.h`](file:///Users/frgonzal/Documents/maxine/c_lang/include/wal_logger.h)
 
 ### Step 1: Author Header Specification
 
@@ -382,7 +385,9 @@ int main(void) {
 ## 11. Pure CLI / Command Interface
 
 ### 1. Compile WAL Engine with POSIX Compliance
+
 Compile binary:
+
 ```bash
 gcc -std=c17 -Wall -Wextra -Werror -Wpedantic \
     -D_POSIX_C_SOURCE=200809L \
@@ -392,13 +397,17 @@ gcc -std=c17 -Wall -Wextra -Werror -Wpedantic \
 ```
 
 ### 2. Trace Kernel Syscalls with Strace
+
 Inspect exact `openat`, `fcntl`, `pwrite`, and `fdatasync` syscall execution counts:
+
 ```bash
 strace -e trace=openat,fcntl,pwrite64,fdatasync,close ./bin/wal_logger
 ```
 
 ### 3. Inspect Open File Handles with Lsof
+
 Audit open file descriptors and locks:
+
 ```bash
 lsof /tmp/database_wal.log 2>/dev/null || true
 ```
@@ -407,7 +416,7 @@ lsof /tmp/database_wal.log 2>/dev/null || true
 
 ## 12. Advanced Architecture & Edge-Case Failure Modes
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                    SYSCALL FAILURE RECOVERY MATRIX                             │
 ├──────────────────────┬────────────────────────┬────────────────────────────────┤
@@ -432,29 +441,37 @@ lsof /tmp/database_wal.log 2>/dev/null || true
 ## 13. Detailed Sub-Components & Subsystems
 
 ### 1. Linux Virtual File System (VFS) Switcher
+
 * **Key Concepts**: Kernel abstraction layer dispatching standardized POSIX syscalls (`read`, `write`) to underlying filesystem drivers (Ext4, XFS, Btrfs, ZFS).
 * **CLI / Tool Snippet**:
+
 ```bash
 cat /proc/filesystems
 ```
 
 ### 2. POSIX File Descriptor Allocator
+
 * **Key Concepts**: Lowest-available-integer rule: Linux kernel always assigns the lowest unallocated integer (`0, 1, 2, 3..`) when allocating new file descriptors.
 * **CLI / Tool Snippet**:
+
 ```bash
 ls -la /proc/$$/fd 2>/dev/null || true
 ```
 
 ### 3. POSIX Inode Lock Manager (`/proc/locks`)
+
 * **Key Concepts**: Kernel lock coordinator tracking active POSIX `fcntl` read/write advisory locks across all system processes.
 * **CLI / Tool Snippet**:
+
 ```bash
 cat /proc/locks 2>/dev/null || true
 ```
 
 ### 4. Direct I/O Bypass Subsystem (`O_DIRECT`)
+
 * **Key Concepts**: Bypasses the Linux page cache, transferring data directly from userspace memory buffers to physical NVMe storage controllers.
 * **CLI / Tool Snippet**:
+
 ```bash
 man 2 open
 ```
@@ -464,6 +481,7 @@ man 2 open
 ## 14. References (The 5+5 Rule)
 
 ### Official Documentation & Academic Specifications
+
 1. [IEEE Std 1003.1-2017 (POSIX.1-2017): System Interfaces (open, read, write, fcntl)](https://pubs.opengroup.org/)
 2. [Linux open(2) System Call Manual Page](https://man7.org/linux/man-pages/man2/open.2.html)
 3. [Linux fcntl(2) System Call Manual Page](https://man7.org/linux/man-pages/man2/fcntl.2.html)
@@ -471,17 +489,18 @@ man 2 open
 5. [MISRA C:2012 Guidelines: System Call Interface Rules](https://www.misra.org.uk/)
 
 ### Authoritative Engineering Textbooks & Systems Deep Dives
-6. [W. Richard Stevens and Stephen A. Rago: Advanced Programming in the UNIX Environment (Chapters 3, 4: File I/O and Files/Directories)](https://en.wikipedia.org/wiki/Advanced_Programming_in_the_Unix_Environment)
-7. [Michael Kerrisk: The Linux Programming Interface (Chapters 4, 5: File I/O)](https://man7.org/tlpi/)
-8. [Brendan Gregg: Systems Performance: Enterprise and the Cloud (Syscall Analysis)](https://www.brendangregg.com/)
-9. [Julia Evans: What are File Descriptors and How do They Work?](https://jvns.ca/)
-10. [Eli Bendersky: Non-Blocking File I/O and Atomic Positional Writes](https://eli.thegreenplace.net/)
+
+1. [W. Richard Stevens and Stephen A. Rago: Advanced Programming in the UNIX Environment (Chapters 3, 4: File I/O and Files/Directories)](https://en.wikipedia.org/wiki/Advanced_Programming_in_the_Unix_Environment)
+2. [Michael Kerrisk: The Linux Programming Interface (Chapters 4, 5: File I/O)](https://man7.org/tlpi/)
+3. [Brendan Gregg: Systems Performance: Enterprise and the Cloud (Syscall Analysis)](https://www.brendangregg.com/)
+4. [Julia Evans: What are File Descriptors and How do They Work?](https://jvns.ca/)
+5. [Eli Bendersky: Non-Blocking File I/O and Atomic Positional Writes](https://eli.thegreenplace.net/)
 
 ---
 
 ## 15. Universal FinOps & Hardware Cost Governance
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                        SYSCALL FINOPS SAVINGS MATRIX                           │
 ├──────────────────────────┬──────────────────────────┬──────────────────────────┤
@@ -502,12 +521,15 @@ man 2 open
 ```
 
 ### 1. `fdatasync` vs `fsync` Cloud Disk I/O Economics
+
 In an enterprise transactional database processing 20,000 commits per second:
-- **Standard `fsync()`**: Flushes both dirty data blocks AND updates inode metadata (modification time `st_mtime`), triggering **2 distinct physical I/O writes per transaction** ($40,000\text{ IOPS} \times \$0.065/\text{IOPS-month} = \mathbf{\$2,600/\text{month}}$).
-- **Optimized `fdatasync()`**: Flushes only modified data blocks, omitting redundant metadata updates unless the file size changed (**1 physical write per transaction**).
-- Disk IOPS consumption drops by **50%**, saving **\$15,600/year in cloud provisioned IOPS fees**.
+
+* **Standard `fsync()`**: Flushes both dirty data blocks AND updates inode metadata (modification time `st_mtime`), triggering **2 distinct physical I/O writes per transaction** ($40,000\text{ IOPS} \times \$0.065/\text{IOPS-month} = \mathbf{\$2,600/\text{month}}$).
+* **Optimized `fdatasync()`**: Flushes only modified data blocks, omitting redundant metadata updates unless the file size changed (**1 physical write per transaction**).
+* Disk IOPS consumption drops by **50%**, saving **\$15,600/year in cloud provisioned IOPS fees**.
 
 ### 2. `pwrite` Multithreaded Scalability vs Thread Contention
-- Traditional seek-and-write (`lseek()` + `write()`) requires wrapping all file operations in a global thread mutex, capping throughput at 15,000 IOPS per server.
-- Atomic `pwrite()` executes lock-free parallel writes across 64 CPU cores, reaching **180,000 IOPS per server node**.
-- **FinOps ROI**: Eliminates the need to shard databases across multiple expensive cloud instances, saving **\$72,000/year**.
+
+* Traditional seek-and-write (`lseek()` + `write()`) requires wrapping all file operations in a global thread mutex, capping throughput at 15,000 IOPS per server.
+* Atomic `pwrite()` executes lock-free parallel writes across 64 CPU cores, reaching **180,000 IOPS per server node**.
+* **FinOps ROI**: Eliminates the need to shard databases across multiple expensive cloud instances, saving **\$72,000/year**.

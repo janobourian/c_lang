@@ -1,13 +1,14 @@
 # Module 13: C Network Programming, Berkeley Sockets, TLV Framing & TLS
 
-**Track:** C Systems Programming, Memory Engineering & High-Performance Computing  
-**Category:** POSIX Sockets, TCP/UDP Transport, Socket Options, TLV Protocol Framing & OpenSSL  
-**Standard Identifier:** `DOC-STD-UNIVERSAL-2026`  
+**Track:** C Systems Programming, Memory Engineering & High-Performance Computing
+**Category:** POSIX Sockets, TCP/UDP Transport, Socket Options, TLV Protocol Framing & OpenSSL
+**Standard Identifier:** `DOC-STD-UNIVERSAL-2026`
 **Status:** ✅ Completed
 
 ---
 
 ## 📑 Table of Contents
+
 1. [High-Level Overview & Executive Summary](#1-high-level-overview--executive-summary)
 2. [Network Byte Order & Protocol Architecture (Endianness)](#2-network-byte-order--protocol-architecture-endianness)
 3. [Berkeley Sockets Lifecycle & Non-Blocking accept4](#3-berkeley-sockets-lifecycle--non-blocking-accept4)
@@ -17,14 +18,12 @@
 7. [Certification & Engineering Essentials (MISRA-C / CERT-C Cheat Sheet)](#7-certification--engineering-essentials-misra-c--cert-c-cheat-sheet)
 8. [Comparative Analysis Matrix: Network Protocols & Sockets](#8-comparative-analysis-matrix-network-protocols--sockets)
 9. [Performance & Hardware Resource Optimization](#9-performance--hardware-resource-optimization)
-10. [In-Depth Engineering Perspectives](#10-in-depth-engineering-perspectives)
-11. [Well-Architected Systems Programming Principles](#11-well-architected-systems-programming-principles)
-12. [Step-by-Step Production Lab: High-Speed TLV Binary Framing Engine](#12-step-by-step-production-lab-high-speed-tlv-binary-framing-engine)
-13. [Pure CLI / Command Interface](#13-pure-cli--command-interface)
-14. [Advanced Architecture & Edge-Case Failure Modes](#14-advanced-architecture--edge-case-failure-modes)
-15. [Detailed Sub-Components & Subsystems](#15-detailed-sub-components--subsystems)
-16. [References (The 5+5 Rule)](#16-references-the-55-rule)
-17. [Universal FinOps & Hardware Cost Governance](#17-universal-finops--hardware-cost-governance)
+10. [Step-by-Step Production Lab: High-Speed TLV Binary Framing Engine](#10-step-by-step-production-lab-high-speed-tlv-binary-framing-engine)
+11. [Pure CLI / Command Interface](#11-pure-cli--command-interface)
+12. [Advanced Architecture & Edge-Case Failure Modes](#12-advanced-architecture--edge-case-failure-modes)
+13. [Detailed Sub-Components & Subsystems](#13-detailed-sub-components--subsystems)
+14. [References (The 5+5 Rule)](#14-references-the-55-rule)
+15. [Universal FinOps & Hardware Cost Governance](#15-universal-finops--hardware-cost-governance)
 
 ---
 
@@ -33,12 +32,13 @@
 Network communications in C systems programming are built upon the standardized **Berkeley Sockets API** (`socket`, `bind`, `listen`, `accept4`, `connect`, `send`, `recv`, `shutdown`, `close`). Unlike interpreted environments that obscure TCP stream dynamics, C gives developers raw, direct control over the operating system kernel's network stack (`sk_buff`), Network Interface Card (NIC) ring buffers, and hardware TCP offload engines.
 
 Mastering mission-critical C networking requires navigating four essential disciplines:
+
 1. **Network Byte Order (Big-Endian)** conversion (`htons`, `htonl`, `ntohs`, `ntohl`) ensuring seamless data interchange across heterogeneous CPU architectures.
 2. **Socket Option Optimization (`setsockopt`)**: Enabling **`SO_REUSEPORT`** for kernel-level multi-core connection load balancing and **`TCP_NODELAY`** to disable Nagle's algorithm and eliminate latency-inducing 40ms ACK delays.
 3. **Application-Layer Protocol Framing**: Implementing deterministic **Type-Length-Value (TLV)** binary framing protocols to solve the classic "TCP Sticking Packet / Fragmentation" stream problem.
 4. **Transport Layer Security (TLS)**: Integrating OpenSSL / BoringSSL non-blocking secure sockets (`SSL_read`, `SSL_write`) into asynchronous event loops.
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │               BERKELEY TCP SOCKET LIFECYCLE & STATE TRANSITIONS                │
 ├────────────────────────────────────────────────────────────────────────────────┤
@@ -66,6 +66,7 @@ Mastering mission-critical C networking requires navigating four essential disci
 ```
 
 ### 👔 Executive Summary (For Managers & Non-Technical Stakeholders)
+
 * **Business Purpose**: Powers the low-latency network engines that connect enterprise trading systems, banking APIs, payment processors, and real-time gaming services to global consumers.
 * **How It Works**: Transmits binary data directly across the network wire at hardware speeds, enforcing binary security validation and TLS encryption on every transaction.
 * **Key Business Value & ROI**: Slashes API network latency from 50ms to $< 1\text{ms}$, eliminates server connection dropouts during high-traffic spikes, and slashes cloud network egress compute costs.
@@ -76,7 +77,7 @@ Mastering mission-critical C networking requires navigating four essential disci
 
 The Internet Protocol standard dictates that all multi-byte integers transmitted over a network wire must be in **Big-Endian (Network Byte Order)** (most significant byte at lowest memory address).
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                   BYTE ORDER CONVERSION FUNCTIONS (<arpa/inet.h>)              │
 ├───────────────────┬───────────────────┬────────────────────────────────────────┤
@@ -100,7 +101,7 @@ Linux provides the atomic **`accept4(sfd, addr, len, flags)`** system call, allo
 
 ```c
 #if defined(__linux__)
-int client_fd = accept4(server_fd, (struct sockaddr *)&client_addr, &client_len, 
+int client_fd = accept4(server_fd, (struct sockaddr *)&client_addr, &client_len,
                         SOCK_NONBLOCK | SOCK_CLOEXEC);
 #endif
 ```
@@ -109,7 +110,7 @@ int client_fd = accept4(server_fd, (struct sockaddr *)&client_addr, &client_len,
 
 ## 4. High-Performance Socket Tuning (SO_REUSEPORT & TCP_NODELAY)
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                     PRODUCTION SOCKET TUNING PARAMETERS                        │
 ├───────────────────┬───────────────────┬────────────────────────────────────────┤
@@ -137,7 +138,7 @@ Because TCP is a **Continuous Stream Protocol** without built-in message boundar
 
 To guarantee message boundaries, enterprise systems use **Type-Length-Value (TLV) Binary Framing**:
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                     TLV (TYPE-LENGTH-VALUE) BINARY FRAME                       │
 ├────────────────────┬────────────────────┬──────────────────────────────────────┤
@@ -151,6 +152,7 @@ To guarantee message boundaries, enterprise systems use **Type-Length-Value (TLV
 ## 6. OpenSSL TLS / Cryptographic Transport Integration
 
 In non-blocking event loops, OpenSSL functions (`SSL_read`, `SSL_write`) return error codes that must be mapped to event loop state transitions:
+
 * **`SSL_ERROR_WANT_READ`**: The TLS engine needs to read more cryptographic handshake data from the socket before proceeding; register socket for read readiness.
 * **`SSL_ERROR_WANT_WRITE`**: The TLS engine needs to flush handshake data; register socket for write readiness.
 
@@ -169,16 +171,16 @@ In non-blocking event loops, OpenSSL functions (`SSL_read`, `SSL_write`) return 
 
 | Feature | TCP (`SOCK_STREAM`) | UDP (`SOCK_DGRAM`) | UNIX Domain (`AF_UNIX`) | TLS over TCP |
 | :--- | :--- | :--- | :--- | :--- |
-| **Reliability** | **Guaranteed (ACK/Retran)**| Best-Effort (Lossy)| Guaranteed (Memory) | Guaranteed + Encrypted |
-| **Framing** | Byte Stream (Needs TLV)| **Datagram (Preserved)**| Stream or Datagram | Byte Stream (Encrypted)|
-| **Overhead** | Moderate (Handshake) | **Absolute Minimum** | Ultra-Low (Bypasses IP)| Cryptographic Handshake|
-| **Latency** | Low ($< 1\text{ms}$) | **Ultra-Low ($< 100\mu\text{s}$)**| **Memory Speed ($< 2\mu\text{s}$)**| Low + Crypto computation|
+| **Reliability** | **Guaranteed (ACK/Retran)** | Best-Effort (Lossy) | Guaranteed (Memory) | Guaranteed + Encrypted |
+| **Framing** | Byte Stream (Needs TLV) | **Datagram (Preserved)** | Stream or Datagram | Byte Stream (Encrypted) |
+| **Overhead** | Moderate (Handshake) | **Absolute Minimum** | Ultra-Low (Bypasses IP) | Cryptographic Handshake |
+| **Latency** | Low ($< 1\text{ms}$) | **Ultra-Low ($< 100\mu\text{s}$)** | **Memory Speed ($< 2\mu\text{s}$)** | Low + Crypto computation |
 
 ---
 
 ## 9. Performance & Hardware Resource Optimization
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                         NETWORK TUNING PLAYBOOK                                │
 ├────────────────────────────────────────────────────────────────────────────────┤
@@ -194,9 +196,10 @@ In non-blocking event loops, OpenSSL functions (`SSL_read`, `SSL_write`) return 
 
 ## 10. Step-by-Step Production Lab: High-Speed TLV Binary Framing Engine
 
-### File Structure:
-- [`src/tlv_server.c`](file:///Users/frgonzal/Documents/maxine/c_lang/src/tlv_server.c)
-- [`include/tlv_server.h`](file:///Users/frgonzal/Documents/maxine/c_lang/include/tlv_server.h)
+### File Structure
+
+* [`src/tlv_server.c`](file:///Users/frgonzal/Documents/maxine/c_lang/src/tlv_server.c)
+* [`include/tlv_server.h`](file:///Users/frgonzal/Documents/maxine/c_lang/include/tlv_server.h)
 
 ### Step 1: Author TLV Protocol Specification Header
 
@@ -370,7 +373,9 @@ int main(void) {
 ## 11. Pure CLI / Command Interface
 
 ### 1. Compile TLV Server Engine
+
 Compile binary with optimization:
+
 ```bash
 gcc -std=c17 -Wall -Wextra -Werror -Wpedantic \
     -O2 -Iinclude \
@@ -379,13 +384,17 @@ gcc -std=c17 -Wall -Wextra -Werror -Wpedantic \
 ```
 
 ### 2. Verify Port Listening and Socket Options with SS
+
 Audit active network sockets and TCP buffer sizes:
+
 ```bash
 ss -tulpn | grep 9090 2>/dev/null || true
 ```
 
 ### 3. Trace Network Socket Syscalls with Strace
+
 Inspect `setsockopt` socket configurations:
+
 ```bash
 strace -e trace=socket,setsockopt,bind,listen ./bin/tlv_server
 ```
@@ -394,7 +403,7 @@ strace -e trace=socket,setsockopt,bind,listen ./bin/tlv_server
 
 ## 12. Advanced Architecture & Edge-Case Failure Modes
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                    NETWORK FAILURE RECOVERY MATRIX                             │
 ├──────────────────────┬────────────────────────┬────────────────────────────────┤
@@ -419,29 +428,37 @@ strace -e trace=socket,setsockopt,bind,listen ./bin/tlv_server
 ## 13. Detailed Sub-Components & Subsystems
 
 ### 1. Linux Kernel `sk_buff` Network Buffer
+
 * **Key Concepts**: Core kernel data structure representing network packets traversing network drivers, IP routing, and TCP reassembly queues.
 * **CLI / Tool Snippet**:
+
 ```bash
 cat /proc/net/sockstat
 ```
 
 ### 2. Nagle's Algorithm Subsystem (`TCP_NODELAY`)
+
 * **Key Concepts**: Congestion control algorithm delaying small outbound packets until previous ACK returns; disabled in low-latency systems.
 * **CLI / Tool Snippet**:
+
 ```bash
 man 7 tcp
 ```
 
 ### 3. OpenSSL Cryptographic State Engine (`SSL_CTX`)
+
 * **Key Concepts**: Manages shared TLS certificates, cipher suites, session ticket caches, and cryptographic keys across worker threads.
 * **CLI / Tool Snippet**:
+
 ```bash
 openssl version
 ```
 
 ### 4. POSIX Socket Buffer Resizer (`SO_RCVBUF` / `SO_SNDBUF`)
+
 * **Key Concepts**: Modifies kernel TCP socket receive/send window buffers to maximize Bandwidth-Delay Product (BDP) on 10GbE+ links.
 * **CLI / Tool Snippet**:
+
 ```bash
 sysctl net.ipv4.tcp_rmem net.ipv4.tcp_wmem 2>/dev/null || true
 ```
@@ -451,6 +468,7 @@ sysctl net.ipv4.tcp_rmem net.ipv4.tcp_wmem 2>/dev/null || true
 ## 14. References (The 5+5 Rule)
 
 ### Official Documentation & Academic Specifications
+
 1. [IEEE Std 1003.1-2017 (POSIX.1-2017): Sockets API Standard](https://pubs.opengroup.org/)
 2. [RFC 9293: Transmission Control Protocol (TCP) Specification](https://www.rfc-editor.org/rfc/rfc9293.html)
 3. [Linux socket(7) and tcp(7) Manual Pages](https://man7.org/linux/man-pages/man7/tcp.7.html)
@@ -458,17 +476,18 @@ sysctl net.ipv4.tcp_rmem net.ipv4.tcp_wmem 2>/dev/null || true
 5. [OpenSSL 3.0 Cryptographic TLS API Documentation](https://www.openssl.org/docs/)
 
 ### Authoritative Engineering Textbooks & Systems Deep Dives
-6. [W. Richard Stevens: UNIX Network Programming, Volume 1: Sockets Networking API](https://en.wikipedia.org/wiki/UNIX_Network_Programming)
-7. [Beej's Guide to Network Programming (Using Internet Sockets)](https://beej.us/guide/bgnet/)
-8. [Cloudflare Engineering: High-Speed UDP/TCP Processing and Kernel Bypass](https://blog.cloudflare.com/)
-9. [Eli Bendersky: Concurrent Network Servers in C: Non-Blocking TLV Protocols](https://eli.thegreenplace.net/)
-10. [High-Performance Linux Systems: Tuning TCP_NODELAY and SO_REUSEPORT](https://www.kernel.org/)
+
+1. [W. Richard Stevens: UNIX Network Programming, Volume 1: Sockets Networking API](https://en.wikipedia.org/wiki/UNIX_Network_Programming)
+2. [Beej's Guide to Network Programming (Using Internet Sockets)](https://beej.us/guide/bgnet/)
+3. [Cloudflare Engineering: High-Speed UDP/TCP Processing and Kernel Bypass](https://blog.cloudflare.com/)
+4. [Eli Bendersky: Concurrent Network Servers in C: Non-Blocking TLV Protocols](https://eli.thegreenplace.net/)
+5. [High-Performance Linux Systems: Tuning TCP_NODELAY and SO_REUSEPORT](https://www.kernel.org/)
 
 ---
 
 ## 15. Universal FinOps & Hardware Cost Governance
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                         NETWORK FINOPS SAVINGS MATRIX                          │
 ├──────────────────────────┬──────────────────────────┬──────────────────────────┤
@@ -489,11 +508,14 @@ sysctl net.ipv4.tcp_rmem net.ipv4.tcp_wmem 2>/dev/null || true
 ```
 
 ### 1. TLV Binary Protocol vs JSON API Egress & Compute Economics
+
 In a financial payment processor servicing 50,000,000 transaction requests daily:
-- **JSON REST API**: Average message size is 650 bytes ($32.5\text{ Gigabytes daily egress}$). Parsing JSON strings consumes 12,000 CPU instructions per request ($12\text{ cloud servers required} \times \$650/\text{month} = \mathbf{\$7,800/\text{month}}$).
-- **Binary TLV Protocol**: Compact binary struct size is 48 bytes ($2.4\text{ Gigabytes daily egress}$). Direct memory framing parses in $< 20\text{ CPU instructions}$.
-- Required server fleet drops from 12 to **2 servers** ($2 \times \$650 = \mathbf{\$1,300/\text{month}}$). Egress bandwidth drops by **92%**.
-- **FinOps ROI**: Delivers **\$6,500/month (\$78,000/year) in direct cloud compute & network egress savings**.
+
+* **JSON REST API**: Average message size is 650 bytes ($32.5\text{ Gigabytes daily egress}$). Parsing JSON strings consumes 12,000 CPU instructions per request ($12\text{ cloud servers required} \times \$650/\text{month} = \mathbf{\$7,800/\text{month}}$).
+* **Binary TLV Protocol**: Compact binary struct size is 48 bytes ($2.4\text{ Gigabytes daily egress}$). Direct memory framing parses in $< 20\text{ CPU instructions}$.
+* Required server fleet drops from 12 to **2 servers** ($2 \times \$650 = \mathbf{\$1,300/\text{month}}$). Egress bandwidth drops by **92%**.
+* **FinOps ROI**: Delivers **\$6,500/month (\$78,000/year) in direct cloud compute & network egress savings**.
 
 ### 2. `SO_REUSEPORT` Multi-Process Scalability
-- Binding 16 worker processes to a single port using `SO_REUSEPORT` allows the Linux kernel to distribute incoming SYN packets across all 16 CPU cores using hardware Receive Side Scaling (RSS), achieving **350,000 requests/sec on a single cloud server**.
+
+* Binding 16 worker processes to a single port using `SO_REUSEPORT` allows the Linux kernel to distribute incoming SYN packets across all 16 CPU cores using hardware Receive Side Scaling (RSS), achieving **350,000 requests/sec on a single cloud server**.

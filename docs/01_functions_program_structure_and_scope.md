@@ -1,30 +1,29 @@
 # Module 01: C Functions, System V AMD64 ABI, Call Stack Frames & Scope Architecture
 
-**Track:** C Systems Programming, Memory Engineering & High-Performance Computing  
-**Category:** Function Calling Conventions, Stack Frame Layouts, ABI Specifications & Function Pointers  
-**Standard Identifier:** `DOC-STD-UNIVERSAL-2026`  
+**Track:** C Systems Programming, Memory Engineering & High-Performance Computing
+**Category:** Function Calling Conventions, Stack Frame Layouts, ABI Specifications & Function Pointers
+**Standard Identifier:** `DOC-STD-UNIVERSAL-2026`
 **Status:** ✅ Completed
 
 ---
 
 ## 📑 Table of Contents
+
 1. [High-Level Overview & Executive Summary](#1-high-level-overview--executive-summary)
 2. [Hardware ABI & Calling Conventions (System V AMD64 & ARM64 AAPCS)](#2-hardware-abi--calling-conventions-system-v-amd64--arm64-aapcs)
 3. [Call Stack Frame Anatomy & Stack Canary Protection](#3-call-stack-frame-anatomy--stack-canary-protection)
 4. [Argument Passing Semantics: Pass-by-Value vs Pass-by-Pointer](#4-argument-passing-semantics-pass-by-value-vs-pass-by-pointer)
 5. [Function Pointers, Callback Tables & Dynamic Dispatch](#5-function-pointers-callback-tables--dynamic-dispatch)
-6. [Variadic Functions (<stdarg.h>) & Inlining Semantics](#6-variadic-functions-stdarg-h--inlining-semantics)
+6. [Variadic Functions (<stdarg.h>) & Inlining Semantics](#6-variadic-functions-stdargh--inlining-semantics)
 7. [Certification & Engineering Essentials (MISRA-C / CERT-C Cheat Sheet)](#7-certification--engineering-essentials-misra-c--cert-c-cheat-sheet)
 8. [Comparative Analysis Matrix: Function Calling Paradigms](#8-comparative-analysis-matrix-function-calling-paradigms)
 9. [Performance & Hardware Resource Optimization](#9-performance--hardware-resource-optimization)
-10. [In-Depth Engineering Perspectives](#10-in-depth-engineering-perspectives)
-11. [Well-Architected Systems Programming Principles](#11-well-architected-systems-programming-principles)
-12. [Step-by-Step Production Lab: High-Performance Event Dispatcher Engine](#12-step-by-step-production-lab-high-performance-event-dispatcher-engine)
-13. [Pure CLI / Command Interface](#13-pure-cli--command-interface)
-14. [Advanced Architecture & Edge-Case Failure Modes](#14-advanced-architecture--edge-case-failure-modes)
-15. [Detailed Sub-Components & Subsystems](#15-detailed-sub-components--subsystems)
-16. [References (The 5+5 Rule)](#16-references-the-55-rule)
-17. [Universal FinOps & Hardware Cost Governance](#17-universal-finops--hardware-cost-governance)
+10. [Step-by-Step Production Lab: High-Performance Event Dispatcher Engine](#10-step-by-step-production-lab-high-performance-event-dispatcher-engine)
+11. [Pure CLI / Command Interface](#11-pure-cli--command-interface)
+12. [Advanced Architecture & Edge-Case Failure Modes](#12-advanced-architecture--edge-case-failure-modes)
+13. [Detailed Sub-Components & Subsystems](#13-detailed-sub-components--subsystems)
+14. [References (The 5+5 Rule)](#14-references-the-55-rule)
+15. [Universal FinOps & Hardware Cost Governance](#15-universal-finops--hardware-cost-governance)
 
 ---
 
@@ -33,12 +32,13 @@
 Functions are the fundamental units of modular decomposition and execution in C systems programming. At the hardware and processor layer, executing a function call is governed by the **Application Binary Interface (ABI)**: the standardized contract dictating how parameters are loaded into CPU registers, how stack frames are constructed on the thread's call stack, how return values are passed back, and how register state is preserved across function boundaries.
 
 Understanding C functions requires peeling away high-level abstractions to master:
+
 1. **System V AMD64 ABI (Linux/macOS)** and **ARM64 AAPCS** calling conventions.
 2. The exact anatomy of a **Call Stack Frame (Activation Record)**, including saved base pointers (`%rbp`), return addresses, register spill areas, and compiler stack canaries (`__stack_chk_guard`).
 3. The strict **Pass-by-Value** semantic model of C and how pointers enable reference mutation.
 4. First-class **Function Pointers** that enable polymorphic runtime dispatch tables and callback architectures without the overhead of heavy object-oriented virtual method tables.
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │               SYSTEM V AMD64 CALL STACK FRAME ARCHITECTURE                     │
 ├────────────────────────────────────────────────────────────────────────────────┤
@@ -63,6 +63,7 @@ Understanding C functions requires peeling away high-level abstractions to maste
 ```
 
 ### 👔 Executive Summary (For Managers & Non-Technical Stakeholders)
+
 * **Business Purpose**: Structures mission-critical systems into modular, isolated, reusable computational units that execute with absolute maximum processor efficiency.
 * **How It Works**: Converts business logic into optimized machine subroutines that exchange data using high-speed processor registers rather than slow physical RAM chips.
 * **Key Business Value & ROI**: Slashes CPU execution cycles by 40% through direct register argument passing, prevents catastrophic stack-smashing security exploits, and allows engineering teams to build modular software libraries that run across millions of servers worldwide.
@@ -71,7 +72,7 @@ Understanding C functions requires peeling away high-level abstractions to maste
 
 ## 2. Hardware ABI & Calling Conventions (System V AMD64 & ARM64 AAPCS)
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                 SYSTEM V AMD64 VS ARM64 AAPCS REGISTER PASSING                 │
 ├───────────────────────┬──────────────────────────┬─────────────────────────────┤
@@ -95,6 +96,7 @@ Understanding C functions requires peeling away high-level abstractions to maste
 ```
 
 ### 2.1 The 16-Byte Stack Alignment Invariant
+
 Under the System V AMD64 ABI, the stack pointer `%rsp` **must be 16-byte aligned** immediately before any `call` instruction is executed. When the `call` instruction pushes the 8-byte return address, `%rsp` becomes misaligned by 8 bytes ($16k + 8$). In the function prologue, `push %rbp` pushes another 8 bytes, restoring the mandatory 16-byte alignment ($16k$). Violating 16-byte alignment triggers immediate hardware segmentation faults when executing SIMD SSE/AVX vector instructions!
 
 ---
@@ -102,6 +104,7 @@ Under the System V AMD64 ABI, the stack pointer `%rsp` **must be 16-byte aligned
 ## 3. Call Stack Frame Anatomy & Stack Canary Protection
 
 ### 3.1 Standard Assembly Function Prologue and Epilogue
+
 ```assembly
 # Function Prologue (Sets up frame base)
 push    %rbp                # Save caller's base pointer
@@ -115,7 +118,9 @@ ret                         # Pop return address from stack into %rip
 ```
 
 ### 3.2 Compiler Stack Canaries (`-fstack-protector-strong`)
+
 To protect against stack buffer overflow attacks (where an attacker overwrites local buffers to corrupt the saved return address), compilers insert a random 8-byte canary value (`fs:0x28` on Linux x86-64) between local buffers and the saved frame pointer:
+
 1. **Prologue**: Loads canary from thread-local storage (`fs:0x28`) and writes it to stack.
 2. **Epilogue**: XORs the stack canary against `fs:0x28`. If non-zero (tampered), calls `__stack_chk_fail()` and aborts process execution immediately!
 
@@ -125,7 +130,7 @@ To protect against stack buffer overflow attacks (where an attacker overwrites l
 
 In C, **all function arguments are passed strictly by value**: the function receives a local copy of the parameter.
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │               PASS-BY-VALUE VS PASS-BY-POINTER MEMORY MUTATION                 │
 ├────────────────────────────────────────────────────────────────────────────────┤
@@ -147,7 +152,8 @@ In C, **all function arguments are passed strictly by value**: the function rece
 
 Function pointers store the memory address of executable machine instructions in the `.text` segment, enabling runtime dynamic polymorphism:
 
-### Function Pointer Syntax Invariant:
+### Function Pointer Syntax Invariant
+
 $$\text{Declaration: } \langle\text{ReturnType}\rangle \; (*\langle\text{PointerName}\rangle)(\langle\text{ParamTypes}\rangle);$$
 
 ```c
@@ -165,16 +171,19 @@ static const ComputeOp JUMP_TABLE[] = { add_op, mul_op };
 
 ---
 
-## 6. Variadic Functions (<stdarg.h>) & Inlining Semantics
+## 6. Variadic Functions (`<stdarg.h>`) & Inlining Semantics
 
 ### 6.1 Variadic Macros & Traversal
+
 Variadic functions accept variable argument counts (e.g. `printf`) using `<stdarg.h>`:
-- `va_list`: Pointer structure traversing variadic arguments.
-- `va_start(ap, last_named_arg)`: Initializes traversal.
-- `va_arg(ap, type)`: Retrieves next argument and advances pointer.
-- `va_end(ap)`: Cleans up resources.
+
+* `va_list`: Pointer structure traversing variadic arguments.
+* `va_start(ap, last_named_arg)`: Initializes traversal.
+* `va_arg(ap, type)`: Retrieves next argument and advances pointer.
+* `va_end(ap)`: Cleans up resources.
 
 ### 6.2 Inlining Semantics (`static inline`)
+
 Marking a function `static inline` instructs the compiler optimizer to replace function call instructions with the body of the function directly, **eliminating function call prologue/epilogue overhead ($~3-5\text{ns}$)**.
 
 ---
@@ -192,16 +201,16 @@ Marking a function `static inline` instructs the compiler optimizer to replace f
 
 | Paradigm | Instruction Overhead | Inlining Feasibility | Dynamic Reconfiguration | Stack Depth Risk |
 | :--- | :--- | :--- | :--- | :--- |
-| **Direct Call (`call label`)**| 1 Cycle (Predicted) | **High (Optimizer)** | None (Compile-time) | Predictable |
-| **Static Inline** | **0 Cycles (Direct Copy)**| **Guaranteed** | None (Compile-time) | **Zero (Flat)** |
-| **Function Pointer** | 2 – 5 Cycles (Indirect)| Low | **High (Runtime Swap)** | Predictable |
-| **Recursion** | $N \times$ Frame Alloc | None | High | **Critical (Stack Overflow)**|
+| **Direct Call (`call label`)** | 1 Cycle (Predicted) | **High (Optimizer)** | None (Compile-time) | Predictable |
+| **Static Inline** | **0 Cycles (Direct Copy)** | **Guaranteed** | None (Compile-time) | **Zero (Flat)** |
+| **Function Pointer** | 2 – 5 Cycles (Indirect) | Low | **High (Runtime Swap)** | Predictable |
+| **Recursion** | $N \times$ Frame Alloc | None | High | **Critical (Stack Overflow)** |
 
 ---
 
 ## 9. Performance & Hardware Resource Optimization
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                         FUNCTION TUNING PLAYBOOK                               │
 ├────────────────────────────────────────────────────────────────────────────────┤
@@ -217,9 +226,10 @@ Marking a function `static inline` instructs the compiler optimizer to replace f
 
 ## 10. Step-by-Step Production Lab: High-Performance Event Dispatcher Engine
 
-### File Structure:
-- [`src/event_dispatcher.c`](file:///Users/frgonzal/Documents/maxine/c_lang/src/event_dispatcher.c)
-- [`include/event_dispatcher.h`](file:///Users/frgonzal/Documents/maxine/c_lang/include/event_dispatcher.h)
+### File Structure
+
+* [`src/event_dispatcher.c`](file:///Users/frgonzal/Documents/maxine/c_lang/src/event_dispatcher.c)
+* [`include/event_dispatcher.h`](file:///Users/frgonzal/Documents/maxine/c_lang/include/event_dispatcher.h)
 
 ### Step 1: Author Header with Function Pointer Types & Contracts
 
@@ -354,7 +364,9 @@ int main(void) {
 ## 11. Pure CLI / Command Interface
 
 ### 1. Compile with Stack Canary and Frame Pointer Preservation
+
 Compile with debug symbols and stack checking:
+
 ```bash
 gcc -std=c17 -Wall -Wextra -Werror -Wpedantic \
     -fstack-protector-strong -fno-omit-frame-pointer \
@@ -364,14 +376,18 @@ gcc -std=c17 -Wall -Wextra -Werror -Wpedantic \
 ```
 
 ### 2. Inspect Assembly Call Sites and Register Passing
+
 Verify that arguments 1-6 are passed via `%rdi`, `%rsi`, `%rdx`:
+
 ```bash
 objdump -d -M intel bin/event_dispatcher \
     | grep -A 15 "<dispatcher_dispatch>:"
 ```
 
 ### 3. Verify Stack Protection Symbol Links
+
 Verify linkage of `__stack_chk_fail` security symbol:
+
 ```bash
 nm bin/event_dispatcher | grep -i stack_chk
 ```
@@ -380,7 +396,7 @@ nm bin/event_dispatcher | grep -i stack_chk
 
 ## 12. Advanced Architecture & Edge-Case Failure Modes
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                    FUNCTION FAILURE RECOVERY MATRIX                            │
 ├──────────────────────┬────────────────────────┬────────────────────────────────┤
@@ -405,29 +421,37 @@ nm bin/event_dispatcher | grep -i stack_chk
 ## 13. Detailed Sub-Components & Subsystems
 
 ### 1. System V AMD64 Red Zone Subsystem
+
 * **Key Concepts**: 128-byte area below `%rsp` that leaf functions can use for temporary storage without adjusting the stack pointer.
 * **CLI / Tool Snippet**:
+
 ```bash
 gcc -mno-red-zone -S src/event_dispatcher.c -Iinclude
 ```
 
 ### 2. GCC Inlining Heuristics Engine
+
 * **Key Concepts**: Evaluates function AST complexity, instruction count, and caller density to decide whether to inline.
 * **CLI / Tool Snippet**:
+
 ```bash
 gcc -Winline -O2 -c src/event_dispatcher.c -Iinclude
 ```
 
 ### 3. Stack Canary Generator (`/dev/urandom` / `fs:0x28`)
+
 * **Key Concepts**: OS kernel loads random 64-bit entropy into thread control block at thread startup to seed stack canary protection.
 * **CLI / Tool Snippet**:
+
 ```bash
 gdb --batch -ex "x/gx (void*)\$fs_base+0x28" bin/event_dispatcher 2>/dev/null || true
 ```
 
 ### 4. Tail-Call Optimization (TCO) Engine
+
 * **Key Concepts**: Replaces `call` + `ret` sequences with a single `jmp` instruction when a function returns the result of another function call, reusing the existing stack frame.
 * **CLI / Tool Snippet**:
+
 ```bash
 gcc -O3 -foptimize-sibling-calls -S src/event_dispatcher.c -Iinclude
 ```
@@ -437,6 +461,7 @@ gcc -O3 -foptimize-sibling-calls -S src/event_dispatcher.c -Iinclude
 ## 14. References (The 5+5 Rule)
 
 ### Official Documentation & Academic Specifications
+
 1. [System V Application Binary Interface: AMD64 Architecture Processor Supplement](https://refspecs.linuxbase.org/elf/x86_64-abi-0.99.pdf)
 2. [ARM Architecture Procedure Call Standard (AAPCS64)](https://github.com/ARM-software/abi-aa/blob/main/aapcs64/aapcs64.rst)
 3. [ISO/IEC 9899:2018 (C17 Standard: Section 6.9.1 Function Definitions)](https://www.iso.org/)
@@ -444,17 +469,18 @@ gcc -O3 -foptimize-sibling-calls -S src/event_dispatcher.c -Iinclude
 5. [MISRA C:2012 Guidelines: Rule 17.2 & Rule 17.7](https://www.misra.org.uk/)
 
 ### Authoritative Engineering Textbooks & Systems Deep Dives
-6. [K. N. King: C Programming: A Modern Approach (Chapter 9: Functions, Chapter 19: Program Design)](https://knking.com/books/c2/)
-7. [Randal E. Bryant and David R. O'Hallaron: Computer Systems: A Programmer's Perspective (Chapter 3: Machine-Level Representation of Programs)](https://csapp.cs.cmu.edu/)
-8. [Brian W. Kernighan and Dennis M. Ritchie: The C Programming Language (Chapter 4: Functions and Program Structure)](https://en.wikipedia.org/wiki/The_C_Programming_Language)
-9. [Brendan Gregg: BPF Performance Tools: Deep Function Tracing](https://www.brendangregg.com/)
-10. [High-Performance Linux Systems: Understanding Stack Frames and Function Call Overheads](https://www.kernel.org/)
+
+1. [K. N. King: C Programming: A Modern Approach (Chapter 9: Functions, Chapter 19: Program Design)](https://knking.com/books/c2/)
+2. [Randal E. Bryant and David R. O'Hallaron: Computer Systems: A Programmer's Perspective (Chapter 3: Machine-Level Representation of Programs)](https://csapp.cs.cmu.edu/)
+3. [Brian W. Kernighan and Dennis M. Ritchie: The C Programming Language (Chapter 4: Functions and Program Structure)](https://en.wikipedia.org/wiki/The_C_Programming_Language)
+4. [Brendan Gregg: BPF Performance Tools: Deep Function Tracing](https://www.brendangregg.com/)
+5. [High-Performance Linux Systems: Understanding Stack Frames and Function Call Overheads](https://www.kernel.org/)
 
 ---
 
 ## 15. Universal FinOps & Hardware Cost Governance
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────────┐
 │                      FUNCTION FINOPS SAVINGS MATRIX                            │
 ├──────────────────────────┬──────────────────────────┬──────────────────────────┤
@@ -475,13 +501,16 @@ gcc -O3 -foptimize-sibling-calls -S src/event_dispatcher.c -Iinclude
 ```
 
 ### 1. Inlining and Register Passing Compute Optimization
+
 In a distributed trading engine processing 50,000,000 order book updates daily:
-- Un-inlined small helper functions ($3\text{ns}$ call overhead per operation across 20 layers of abstraction = $60\text{ns}$ latency tax per update).
-- Marking critical mathematical routines `static inline` and passing structs by pointer (`const Struct *`) allows the compiler to hold data entirely in CPU registers (`%rdi`, `%rsi`, `%rdx`).
-- Total processing time drops by **32%**, allowing the system to run on **12 fewer dedicated AWS bare-metal instances** (`c6i.metal` @ \$2,800/month = **\$33,600/month**).
-- **FinOps ROI**: Delivers **\$403,200/year in direct server infrastructure cost savings**.
+
+* Un-inlined small helper functions ($3\text{ns}$ call overhead per operation across 20 layers of abstraction = $60\text{ns}$ latency tax per update).
+* Marking critical mathematical routines `static inline` and passing structs by pointer (`const Struct *`) allows the compiler to hold data entirely in CPU registers (`%rdi`, `%rsi`, `%rdx`).
+* Total processing time drops by **32%**, allowing the system to run on **12 fewer dedicated AWS bare-metal instances** (`c6i.metal` @ \$2,800/month = **\$33,600/month**).
+* **FinOps ROI**: Delivers **\$403,200/year in direct server infrastructure cost savings**.
 
 ### 2. Stack Frame Sizing vs Cloud VM Density
-- Restricting stack allocations to $< 4\text{KB}$ per frame allows threads to run with minimal $64\text{KB}$ stack sizes rather than default $8\text{MB}$ stacks.
-- 10,000 concurrent worker threads consume **640MB RAM** instead of **80 Gigabytes**.
-- **FinOps ROI**: Slashes required server host memory by 99%, cutting host memory hardware costs drastically.
+
+* Restricting stack allocations to $< 4\text{KB}$ per frame allows threads to run with minimal $64\text{KB}$ stack sizes rather than default $8\text{MB}$ stacks.
+* 10,000 concurrent worker threads consume **640MB RAM** instead of **80 Gigabytes**.
+* **FinOps ROI**: Slashes required server host memory by 99%, cutting host memory hardware costs drastically.
