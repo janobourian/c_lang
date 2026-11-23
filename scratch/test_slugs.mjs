@@ -1,8 +1,8 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { parse } from "/Users/frgonzal/.npm/_npx/10f54a790ecaa614/node_modules/markdownlint/lib/micromark-parse.mjs";
-import { filterByPredicate, filterByTypes } from "/Users/frgonzal/.npm/_npx/10f54a790ecaa614/node_modules/markdownlint/helpers/micromark-helpers.cjs";
+import { parse } from "markdownlint/lib/micromark-parse.mjs";
+import { filterByPredicate, filterByTypes } from "markdownlint/helpers/micromark-helpers.cjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const docsDir = path.join(__dirname, "..", "docs");

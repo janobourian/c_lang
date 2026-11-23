@@ -5,7 +5,7 @@ import glob
 import subprocess
 import json
 
-docs_dir = "/Users/frgonzal/Documents/maxine/c_lang/docs"
+docs_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "docs")
 
 def github_slug(text):
     # Remove leading hashes

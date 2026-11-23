@@ -1,0 +1,17 @@
+# Documentation build outputs & local backups
+site/
+.cache/
+.venv/
+backups/
+
+# macOS & Editor artifacts
+.DS_Store
+*.dSYM/
+
+# Compiled binaries & object files
+*.o
+*.a
+*.so
+*.dylib
+*.out
+**/main

@@ -1,0 +1,207 @@
+[project]
+site_name = "C Language Mastery & Complete C23 Reference"
+site_description = "From Zero to Systems Architect: A complete, modern C89–C23 (ISO/IEC 9899:2024) learning encyclopedia and full en.cppreference.com/c standard reference."
+site_author = "janobourian"
+site_url = "https://janobourian.github.io/c_lang/"
+copyright = "Copyright &copy; 2026 C Language Mastery &amp; C23 Reference"
+
+repo_url = "https://github.com/janobourian/c_lang"
+repo_name = "janobourian/c_lang"
+edit_uri = "edit/main/docs/"
+
+extra_css = [
+  "stylesheets/extra.css",
+]
+
+extra_javascript = [
+  "javascripts/mathjax.js",
+  "https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js",
+]
+
+nav = [
+  { "Home" = [
+    "index.md",
+    { "Documentation & CI Playbook" = "labs/docs-operations.md" },
+  ]},
+  { "Curriculum (Zero to Master)" = [
+    "curriculum/index.md",
+    { "Tier 0 · Absolute Foundations" = [
+      "curriculum/pre-tier/index.md",
+      { "neg04 · Dev Environment & First Program" = "curriculum/pre-tier/neg04-dev-environment.md" },
+      { "neg03 · Variables, Types & Operators" = "curriculum/pre-tier/neg03-variables-types-operators.md" },
+      { "neg02 · Control Flow & Loops" = "curriculum/pre-tier/neg02-control-flow-loops.md" },
+      { "neg01 · Functions, Scope & Recursion" = "curriculum/pre-tier/neg01-functions-scope-recursion.md" },
+      { "neg00 · Arrays, Strings & Struct Basics" = "curriculum/pre-tier/neg00-arrays-strings-structs.md" },
+    ]},
+    { "Tier 1 · Core Architecture & Memory" = [
+      "curriculum/tier-1-core/index.md",
+      { "00 · Foundations & Process Memory Model" = "curriculum/tier-1-core/00-foundations-memory-model.md" },
+      { "01 · Functions, ABI & Stack Frames" = "curriculum/tier-1-core/01-functions-abi-stack.md" },
+      { "02 · Arrays, Pointers & Arithmetic" = "curriculum/tier-1-core/02-arrays-pointers-arithmetic.md" },
+      { "03 · Strings & Bounds Safety" = "curriculum/tier-1-core/03-strings-bounds-safety.md" },
+      { "04 · Structs, Unions, Bitfields & Enums" = "curriculum/tier-1-core/04-structs-unions-bitfields-enums.md" },
+    ]},
+    { "Tier 2 · Runtime & Preprocessor" = [
+      "curriculum/tier-2-runtime/index.md",
+      { "05 · Dynamic Memory, Heaps & Arenas" = "curriculum/tier-2-runtime/05-dynamic-memory-arenas.md" },
+      { "06 · Preprocessor, Macros & Headers" = "curriculum/tier-2-runtime/06-preprocessor-macros-headers.md" },
+      { "07 · Standard Library Deep Dive" = "curriculum/tier-2-runtime/07-standard-library-deep-dive.md" },
+      { "08 · Error Handling, Signals & setjmp" = "curriculum/tier-2-runtime/08-error-handling-signals-setjmp.md" },
+    ]},
+    { "Tier 3 · Toolchains, OS & Concurrency" = [
+      "curriculum/tier-3-systems/index.md",
+      { "09 · Toolchains, ELF & Makefiles" = "curriculum/tier-3-systems/09-toolchains-elf-makefiles.md" },
+      { "10 · UNIX Syscalls & File Descriptors" = "curriculum/tier-3-systems/10-unix-syscalls-file-descriptors.md" },
+      { "11 · epoll, kqueue & Zero-Copy mmap" = "curriculum/tier-3-systems/11-io-multiplexing-epoll-kqueue-mmap.md" },
+      { "12 · Concurrency, pthreads & Atomics" = "curriculum/tier-3-systems/12-concurrency-pthreads-atomics.md" },
+      { "13 · Network Sockets & TLS" = "curriculum/tier-3-systems/13-network-sockets-tls.md" },
+    ]},
+    { "Tier 4 · Hardware, Forensics & Capstones" = [
+      "curriculum/tier-4-hardware/index.md",
+      { "14 · Sanitizers & GDB Forensics" = "curriculum/tier-4-hardware/14-sanitizers-gdb-forensics.md" },
+      { "15 · Embedded MMIO, volatile & Inline Asm" = "curriculum/tier-4-hardware/15-embedded-mmio-volatile-asm.md" },
+      { "16 · Hardware SIMD (AVX-512, NEON) & PGO" = "curriculum/tier-4-hardware/16-simd-avx512-neon-pgo.md" },
+      { "17 · Enterprise Capstone Case Studies" = "curriculum/tier-4-hardware/17-enterprise-case-studies.md" },
+    ]},
+    { "Tier 5 · Expert & Modern Systems" = [
+      "curriculum/tier-5-expert/index.md",
+      { "18 · Advanced Data Structures" = "curriculum/tier-5-expert/18-advanced-data-structures.md" },
+      { "19 · Modern C (C99, C11, C17, C23 & C2y)" = "curriculum/tier-5-expert/19-modern-c-c99-to-c23.md" },
+      { "20 · CMake & Cross-Compilation" = "curriculum/tier-5-expert/20-cmake-cross-compilation.md" },
+      { "21 · Debugging, Valgrind & perf Profiling" = "curriculum/tier-5-expert/21-debugging-profiling-perf.md" },
+      { "22 · Security Hardening & Exploit Mitigations" = "curriculum/tier-5-expert/22-security-exploits-mitigations.md" },
+      { "23 · Lock-Free, Hazard Pointers & RCU" = "curriculum/tier-5-expert/23-lock-free-hazard-pointers-rcu.md" },
+      { "24 · ABI, FFI, dlopen & Linker Scripts" = "curriculum/tier-5-expert/24-ffi-dynamic-loading-linker-scripts.md" },
+      { "25 · Unicode, Locales & Complex Math" = "curriculum/tier-5-expert/25-unicode-locale-complex-math.md" },
+      { "26 · Testing, Fuzzing & Software Quality" = "curriculum/tier-5-expert/26-testing-fuzzing-quality.md" },
+    ]},
+  ]},
+  { "Language Reference" = [
+    "reference/language/index.md",
+    { "Basic Concepts & Memory Model" = "reference/language/basic-concepts.md" },
+    { "Keywords (C89–C23)" = "reference/language/keywords.md" },
+    { "Preprocessor & #embed" = "reference/language/preprocessor.md" },
+    { "Expressions, Operators & _Generic" = "reference/language/expressions.md" },
+    { "Declarations, Types & typeof" = "reference/language/declarations.md" },
+    { "Initialization & Empty {}" = "reference/language/initialization.md" },
+    { "Functions & Linkage" = "reference/language/functions.md" },
+    { "Statements & Control Flow" = "reference/language/statements.md" },
+    { "Attributes (C23)" = "reference/language/attributes.md" },
+  ]},
+  { "Standard Library" = [
+    "reference/library/index.md",
+    { "Type Support & Limits" = "reference/library/types.md" },
+    { "Program Utilities, Signals & setjmp" = "reference/library/program.md" },
+    { "Variadic Functions & Error Handling" = "reference/library/variadic-and-error.md" },
+    { "Dynamic Memory Management" = "reference/library/memory.md" },
+    { "Byte Strings & Character Utilities" = "reference/library/strings-byte.md" },
+    { "Multibyte, Unicode & Wide Strings" = "reference/library/strings-multibyte-wide.md" },
+    { "Algorithms (qsort & bsearch)" = "reference/library/algorithms.md" },
+    { "Numerics: Math, fenv, Random & Complex" = "reference/library/numerics-math.md" },
+    { "Numerics: Bit Manipulation & Checked Int (C23)" = "reference/library/numerics-bit-checked.md" },
+    { "Date & Time Utilities (<time.h>)" = "reference/library/chrono.md" },
+    { "Input/Output Support (<stdio.h>)" = "reference/library/io.md" },
+    { "Localization Support (<locale.h>)" = "reference/library/locale.md" },
+    { "Concurrency: Threads & Atomics" = "reference/library/concurrency.md" },
+  ]},
+  { "C23 & Standards" = [
+    "standards/index.md",
+    { "C23 Migration & Breaking Changes" = "standards/c23-migration.md" },
+    { "Compiler & Libc Support Matrix" = "standards/compiler-support.md" },
+    { "Technical Specifications (TS / TR)" = "standards/technical-specifications.md" },
+    { "Master Symbol Index & Ecosystem" = "standards/symbol-index.md" },
+  ]},
+  { "Labs & Operations" = [
+    "labs/index.md",
+    { "Docs & GitHub Pages Operations" = "labs/docs-operations.md" },
+  ]},
+]
+
+[project.theme]
+language = "en"
+features = [
+  "announce.dismiss",
+  "content.action.edit",
+  "content.action.view",
+  "content.code.annotate",
+  "content.code.copy",
+  "content.code.select",
+  "content.footnote.tooltips",
+  "content.tabs.link",
+  "content.tooltips",
+  "navigation.footer",
+  "navigation.indexes",
+  "navigation.instant",
+  "navigation.instant.prefetch",
+  "navigation.path",
+  "navigation.sections",
+  "navigation.tabs",
+  "navigation.tabs.sticky",
+  "navigation.top",
+  "navigation.tracking",
+  "search.highlight",
+  "toc.follow",
+]
+
+[project.theme.icon]
+logo = "lucide/cpu"
+repo = "fontawesome/brands/github"
+
+[project.theme.font]
+text = "Inter"
+code = "JetBrains Mono"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme)"
+toggle.icon = "lucide/sun-moon"
+toggle.name = "Switch to light mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
+scheme = "default"
+primary = "indigo"
+accent = "cyan"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
+scheme = "slate"
+primary = "indigo"
+accent = "cyan"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to system preference"
+
+[[project.extra.social]]
+icon = "fontawesome/brands/github"
+link = "https://github.com/janobourian/c_lang"
+
+[project.markdown_extensions]
+abbr = {}
+admonition = {}
+attr_list = {}
+def_list = {}
+footnotes = {}
+md_in_html = {}
+toc.permalink = true
+pymdownx.arithmatex.generic = true
+pymdownx.betterem = {}
+pymdownx.caret = {}
+pymdownx.details = {}
+pymdownx.emoji.emoji_generator = "zensical.extensions.emoji.to_svg"
+pymdownx.emoji.emoji_index = "zensical.extensions.emoji.twemoji"
+pymdownx.highlight.anchor_linenums = true
+pymdownx.highlight.line_spans = "__span"
+pymdownx.highlight.pygments_lang_class = true
+pymdownx.inlinehilite = {}
+pymdownx.keys = {}
+pymdownx.magiclink = {}
+pymdownx.mark = {}
+pymdownx.smartsymbols = {}
+pymdownx.superfences.custom_fences = [
+  { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" },
+]
+pymdownx.tabbed.alternate_style = true
+pymdownx.tabbed.combine_header_slug = true
+pymdownx.tasklist.custom_checkbox = true
+pymdownx.tilde = {}
